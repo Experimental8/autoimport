@@ -850,9 +850,23 @@ async function loadFavourites() {
 }
 
 // Save analysis — server + localStorage
+// Server only needs metadata for sync, not full car data
 async function persistAnalysis(analysis) {
   localStorage.setItem('ai_analyses', JSON.stringify(analyses));
-  await cloudPost('/analyses', analysis);
+  const serverPayload = {
+    id:          analysis.id,
+    name:        analysis.name,
+    date:        analysis.date,
+    searchUrls:  analysis.searchUrls  || [],
+    syncEnabled: analysis.syncEnabled || false,
+    minScore:    analysis.minScore    || 7,
+    ntfyChannel: analysis.ntfyChannel || '',
+    norma:       analysis.norma       || 'WLTP',
+    // Summary stats only — no full car array
+    carCount:    (analysis.cars || []).length,
+    market:      analysis.market || {},
+  };
+  await cloudPost('/analyses', serverPayload);
 }
 
 // Delete analysis — server + localStorage
