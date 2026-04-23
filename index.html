@@ -658,7 +658,8 @@ td.editing input{width:100%;background:#fff;border:2px solid var(--accent);color
               onchange="saveServerUrl(this.value)">
             <button class="btn btn-primary btn-sm" onclick="saveServerUrl(document.getElementById('server-url-input').value)">Guardar</button>
           </div>
-          <div style="margin-top:6px;font-size:11px;color:var(--ink3);">URL do servidor Railway para sync automático e notificações.</div>
+          <div id="server-url-status" style="margin-top:6px;font-size:11px;"></div>
+          <div style="margin-top:4px;font-size:11px;color:var(--ink3);">URL do servidor Railway para sync automático e notificações.</div>
         </div>
         <div class="card-body" style="padding-top:0;">
           <div id="api-key-status" style="font-size:11px;"></div>
@@ -3038,6 +3039,14 @@ async function buildMDEInput(filters){
 // ══════════════════════════════════════════════
 function getApiKey(){ return localStorage.getItem('ai_api_key')||''; }
 
+function showConfigStatus(id, msg, isError){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.textContent = msg;
+  el.style.color = isError ? 'var(--accent)' : 'var(--green)';
+  setTimeout(() => { el.textContent = ''; }, 4000);
+}
+
 function saveApiKey(key){
   key=(key||'').trim();
   if(!key){ alert('Insere uma API key válida.'); return; }
@@ -3045,8 +3054,7 @@ function saveApiKey(key){
   localStorage.setItem('ai_api_key',key);
   const input=document.getElementById('api-key-input');
   if(input) input.value=key;
-  const status=document.getElementById('api-key-status');
-  if(status){ status.textContent='✓ API key guardada'; status.style.color='var(--green)'; }
+  showConfigStatus('api-key-status','✓ API key Anthropic guardada');
 }
 
 function toggleApiKeyVisibility(){
@@ -3075,8 +3083,7 @@ function saveBraveKey(key){
   localStorage.setItem('ai_brave_key',key);
   const input=document.getElementById('brave-key-input');
   if(input) input.value=key;
-  const status=document.getElementById('brave-key-status');
-  if(status){ status.textContent='✓ API key Brave guardada'; status.style.color='var(--green)'; }
+  showConfigStatus('brave-key-status','✓ API key Brave guardada');
 }
 
 function saveApifyKey(key){
@@ -3085,8 +3092,7 @@ function saveApifyKey(key){
   localStorage.setItem('ai_apify_key',key);
   const input=document.getElementById('apify-key-input');
   if(input) input.value=key;
-  const status=document.getElementById('apify-key-status');
-  if(status){ status.textContent='✓ API key Apify guardada'; status.style.color='var(--green)'; }
+  showConfigStatus('apify-key-status','✓ API key Apify guardada');
 }
 
 function setInputMode(mode){
@@ -3267,7 +3273,12 @@ async function fetchAS24FromUrl(){
 function getServerUrl(){ return localStorage.getItem('ai_server_url')||''; }
 
 function saveServerUrl(url){
-  localStorage.setItem('ai_server_url', url.trim());
+  url = (url||'').trim();
+  if(!url){ alert('Insere o URL do servidor.'); return; }
+  localStorage.setItem('ai_server_url', url);
+  const input = document.getElementById('server-url-input');
+  if(input) input.value = url;
+  showConfigStatus('server-url-status', '✓ URL do servidor guardado');
 }
 
 function showSyncSettings(analysis){
