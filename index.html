@@ -824,29 +824,40 @@ async function cloudDelete(path) {
   } catch { return false; }
 }
 
-// Load analyses — server first, localStorage fallback
+// Load analyses — merge server + localStorage
+// Server wins for metadata, localStorage wins for car data
 async function loadAnalyses() {
+  let local = [];
+  try { local = JSON.parse(localStorage.getItem('ai_analyses') || '[]'); }
+  catch { local = []; }
+
   const fromServer = await cloudGet('/analyses');
-  if (fromServer && Array.isArray(fromServer)) {
-    analyses = fromServer;
+  if (fromServer && Array.isArray(fromServer) && fromServer.length > 0) {
+    // Merge: use server metadata but keep local car data if available
+    analyses = fromServer.map(serverEntry => {
+      const localEntry = local.find(l => l.id === serverEntry.id);
+      if (localEntry && localEntry.cars && localEntry.cars.length > 0) {
+        // Local has full car data — merge with server metadata
+        return { ...serverEntry, cars: localEntry.cars, eliminados: localEntry.eliminados, market: localEntry.market || serverEntry.market };
+      }
+      return serverEntry;
+    });
     localStorage.setItem('ai_analyses', JSON.stringify(analyses));
-    return;
+  } else {
+    analyses = local;
   }
-  // Fallback
-  try { analyses = JSON.parse(localStorage.getItem('ai_analyses') || '[]'); }
-  catch { analyses = []; }
 }
 
 // Load favourites — server first, localStorage fallback
 async function loadFavourites() {
-  const fromServer = await cloudGet('/favourites');
-  if (fromServer && Array.isArray(fromServer)) {
-    favs = fromServer;
-    localStorage.setItem('ai_favs', JSON.stringify(favs));
-    return;
-  }
   try { favs = JSON.parse(localStorage.getItem('ai_favs') || '[]'); }
   catch { favs = []; }
+
+  const fromServer = await cloudGet('/favourites');
+  if (fromServer && Array.isArray(fromServer) && fromServer.length > 0) {
+    favs = fromServer;
+    localStorage.setItem('ai_favs', JSON.stringify(favs));
+  }
 }
 
 // Save analysis — server + localStorage
