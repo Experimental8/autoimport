@@ -804,6 +804,7 @@ function goView(id){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('view-'+id).classList.add('active');
   document.querySelector(`[onclick="goView('${id}')"]`)?.classList.add('active');
+  if(id==='config') initConfigStatus();
   const [t,s]=VIEWS[id]||['',''];
   document.getElementById('pg-title').textContent=t;
   document.getElementById('pg-sub').textContent=s;
@@ -3325,6 +3326,24 @@ async function pushAnalysisToServer(analysis){
     });
     console.log('Analysis pushed to server:', analysis.name);
   } catch(e){ console.warn('Server push failed:', e.message); }
+}
+
+function initConfigStatus(){
+  const checks = [
+    { key: getApiKey(),      inputId: 'api-key-input',    statusId: 'api-key-status',    label: '✓ Anthropic configurada' },
+    { key: getApifyKey(),    inputId: 'apify-key-input',  statusId: 'apify-key-status',  label: '✓ Apify configurada' },
+    { key: getBraveKey(),    inputId: 'brave-key-input',  statusId: 'brave-key-status',  label: '✓ Brave configurada' },
+    { key: getServerUrl(),   inputId: 'server-url-input', statusId: 'server-url-status', label: '✓ Servidor configurado' },
+  ];
+  checks.forEach(({ key, inputId, statusId, label }) => {
+    const input  = document.getElementById(inputId);
+    const status = document.getElementById(statusId);
+    if(input && key) input.value = key;
+    if(status){
+      status.textContent  = key ? label : '';
+      status.style.color  = 'var(--green)';
+    }
+  });
 }
 
 </script>
