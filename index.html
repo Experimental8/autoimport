@@ -1,0 +1,3321 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoImport v0.1.5 — Plataforma de Importação</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#F5F2ED; --surface:#FFFFFF; --surface2:#F0EDE8; --border:#DDD9D3; --border2:#E8E4DE;
+  --ink:#1A1714; --ink2:#4A4540; --ink3:#8A837C;
+  --accent:#C8401A; --accent-l:#F5E8E3;
+  --green:#1A6B3C; --green-l:#E3F2EA;
+  --amber:#B5620A; --amber-l:#FDF0E3;
+  --blue:#1A4A8A; --blue-l:#E3EAF5;
+  --gold:#9B7A0A; --gold-l:#FDF8E3;
+  --r:4px; --syne:'Syne',sans-serif; --mono:'DM Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:13px;min-height:100vh;}
+
+/* LAYOUT */
+.app{display:flex;min-height:100vh;}
+.sidebar{width:220px;flex-shrink:0;background:var(--ink);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:200;transition:transform .25s;}
+.sidebar-logo{padding:24px 20px;border-bottom:1px solid rgba(255,255,255,.08);}
+.logo-mark{font-family:var(--syne);font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px;}
+.logo-mark span{color:var(--accent);}
+.logo-sub{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.08em;text-transform:uppercase;margin-top:3px;}
+.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto;}
+.nav-label{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.25);padding:10px 20px 5px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;transition:background .15s;color:rgba(255,255,255,.5);font-size:12px;border:none;background:none;width:100%;text-align:left;font-family:var(--mono);border-radius:0;}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.8);}
+.nav-item.active{background:rgba(200,64,26,.25);color:#fff;border-left:3px solid var(--accent);}
+.nav-icon{font-size:15px;flex-shrink:0;width:20px;text-align:center;}
+.nav-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:9px;padding:2px 6px;border-radius:10px;min-width:18px;text-align:center;}
+.sidebar-footer{padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);font-size:10px;color:rgba(255,255,255,.2);}
+.main{margin-left:220px;flex:1;min-width:0;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.page-title{font-family:var(--syne);font-size:17px;font-weight:700;letter-spacing:-.3px;}
+.page-sub{font-size:11px;color:var(--ink3);margin-top:1px;}
+.content{padding:24px 28px;}
+.view{display:none;}.view.active{display:block;}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px;}
+.card-hdr{padding:13px 18px;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;background:var(--surface2);}
+.card-title{font-family:var(--syne);font-size:13px;font-weight:600;}
+.card-body{padding:18px;}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.stat{background:var(--surface);border:1px solid var(--border);padding:18px;border-radius:var(--r);border-top:3px solid var(--border);}
+.stat.c-accent{border-top-color:var(--accent);}
+.stat.c-green{border-top-color:var(--green);}
+.stat.c-amber{border-top-color:var(--amber);}
+.stat.c-blue{border-top-color:var(--blue);}
+.stat-val{font-family:var(--syne);font-size:26px;font-weight:800;letter-spacing:-1px;line-height:1;margin-bottom:5px;}
+.stat-label{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;}
+
+/* TABLES */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{background:var(--surface2);color:var(--ink3);font-size:9px;text-transform:uppercase;letter-spacing:.08em;padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;font-family:var(--mono);font-weight:400;}
+td{padding:9px 12px;border-bottom:1px solid var(--border2);vertical-align:middle;}
+tr:hover td{background:var(--surface2);}
+td.edit-cell{cursor:pointer;}
+td.edit-cell:hover{background:var(--accent-l);}
+td.editing{padding:0;}
+td.editing input{width:100%;background:#fff;border:2px solid var(--accent);color:var(--ink);padding:7px 10px;font-family:var(--mono);font-size:12px;outline:none;}
+
+/* TAGS */
+.tag{display:inline-block;padding:2px 7px;font-size:10px;border-radius:2px;font-family:var(--mono);}
+.t-elec{background:var(--blue-l);color:var(--blue);}
+.t-phev{background:var(--green-l);color:var(--green);}
+.t-gas{background:var(--amber-l);color:var(--amber);}
+.t-diesel{background:var(--surface2);color:var(--ink2);}
+.t-mild{background:#F0E8F5;color:#6B3A8A;}
+
+/* SCORE */
+.score{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:22px;font-size:11px;font-weight:700;font-family:var(--syne);border-radius:2px;padding:0 6px;}
+.s-high{background:var(--green-l);color:var(--green);}
+.s-mid{background:var(--amber-l);color:var(--amber);}
+.s-low{background:var(--accent-l);color:var(--accent);}
+
+/* MARKET SCORE */
+.market-score{display:flex;flex-direction:column;align-items:center;justify-content:center;width:80px;height:80px;border-radius:50%;border:4px solid var(--green);background:var(--green-l);}
+.market-score-val{font-family:var(--syne);font-size:26px;font-weight:800;color:var(--green);line-height:1;}
+.market-score-label{font-size:9px;color:var(--green);text-transform:uppercase;letter-spacing:.05em;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;font-family:var(--mono);font-size:12px;cursor:pointer;border:none;border-radius:var(--r);transition:all .15s;white-space:nowrap;}
+.btn-primary{background:var(--accent);color:#fff;}.btn-primary:hover{background:#A83515;}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+.btn-ghost{background:transparent;color:var(--ink2);border:1px solid var(--border);}.btn-ghost:hover{border-color:var(--ink2);}
+.btn-sm{padding:5px 11px;font-size:11px;}
+.btn-icon{padding:6px;border-radius:50%;width:30px;height:30px;justify-content:center;}
+
+/* FORMS */
+.form-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border2);}
+.form-row:last-child{border-bottom:none;}
+.form-row label{font-size:12px;color:var(--ink);}
+.form-input{background:var(--surface);border:1px solid var(--border);color:var(--ink);padding:7px 10px;font-family:var(--mono);font-size:12px;border-radius:var(--r);outline:none;transition:border-color .15s;}
+.form-input:focus{border-color:var(--accent);}
+.form-note{font-size:10px;color:var(--ink3);margin-top:4px;}
+
+/* WORKFLOW STEPS */
+.wf-steps{display:flex;gap:0;margin-bottom:20px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.wf-step{flex:1;padding:12px 14px;border-right:1px solid var(--border);display:flex;align-items:center;gap:9px;background:var(--surface2);}
+.wf-step:last-child{border-right:none;}
+.wf-step.active{background:var(--surface);border-bottom:2px solid var(--accent);}
+.wf-step.done{opacity:.5;}
+.wf-num{width:22px;height:22px;border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--ink3);flex-shrink:0;}
+.wf-step.active .wf-num{border-color:var(--accent);color:var(--accent);background:var(--accent-l);}
+.wf-step.done .wf-num{background:var(--green);border-color:var(--green);color:#fff;}
+.wf-lbl{font-size:11px;color:var(--ink3);}
+.wf-step.active .wf-lbl{color:var(--ink);font-weight:500;}
+
+/* DROP ZONE */
+.drop{border:2px dashed var(--border);padding:32px;text-align:center;cursor:pointer;transition:all .2s;position:relative;border-radius:var(--r);background:var(--surface2);}
+.drop:hover,.drop.dragover{border-color:var(--accent);background:var(--accent-l);}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;}
+.drop-icon{font-size:28px;margin-bottom:10px;}
+.drop-text{font-size:12px;color:var(--ink3);line-height:1.6;}
+.drop-text strong{color:var(--ink);}
+.file-pill{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:var(--green-l);border:1px solid var(--green);border-radius:var(--r);font-size:11px;color:var(--green);margin-top:8px;}
+
+/* LOG */
+.log{background:var(--ink);color:rgba(255,255,255,.7);padding:12px 14px;font-size:11px;line-height:1.8;max-height:160px;overflow-y:auto;border-radius:var(--r);font-family:var(--mono);}
+.ll{display:flex;gap:10px;}.lt{color:rgba(255,255,255,.25);flex-shrink:0;}
+.lok{color:#42c87a;}.lwarn{color:#f5a742;}.lerr{color:#f54242;}
+
+/* PROG */
+.prog-wrap{margin:14px 0;}
+.prog-top{display:flex;justify-content:space-between;font-size:10px;color:var(--ink3);margin-bottom:5px;}
+.prog-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--accent);transition:width .3s;width:0%;}
+.prog-bar.pulse .prog-fill{animation:pu 1.5s ease-in-out infinite;}
+@keyframes pu{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes carDrive{0%{transform:translateX(-8px) rotate(-2deg);}100%{transform:translateX(8px) rotate(2deg);}}
+@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+
+/* MARKET HEADER */
+.market-hdr{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px;display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;}
+.market-info{flex:1;min-width:200px;}
+.market-title{font-family:var(--syne);font-size:16px;font-weight:700;margin-bottom:4px;}
+.market-sub{font-size:11px;color:var(--ink3);}
+.market-stats{display:flex;gap:20px;flex-wrap:wrap;margin-top:14px;}
+.mstat{display:flex;flex-direction:column;gap:2px;}
+.mstat-val{font-family:var(--syne);font-size:18px;font-weight:700;}
+.mstat-label{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;}
+.market-gauge{flex-shrink:0;}
+
+/* CAR CARD */
+.car-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-bottom:16px;}
+.car-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:all .2s;position:relative;}
+.car-card:hover{border-color:var(--ink2);box-shadow:0 4px 16px rgba(0,0,0,.08);}
+.car-card-img{width:100%;height:160px;object-fit:cover;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--border);}
+.car-card-img img{width:100%;height:100%;object-fit:cover;}
+.car-card-body{padding:14px;}
+.car-card-title{font-family:var(--syne);font-size:14px;font-weight:700;margin-bottom:2px;}
+.car-card-sub{font-size:11px;color:var(--ink3);margin-bottom:10px;}
+.car-card-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.meta-pill{font-size:10px;padding:2px 8px;background:var(--surface2);border-radius:2px;color:var(--ink2);}
+.car-card-costs{background:var(--surface2);border-radius:var(--r);padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.cc-item{display:flex;flex-direction:column;gap:1px;}
+.cc-label{font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;}
+.cc-val{font-family:var(--syne);font-size:13px;font-weight:700;}
+.fav-btn{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.9);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .15s;z-index:10;}
+.fav-btn:hover{background:#fff;transform:scale(1.1);}
+.fav-btn.active{background:var(--accent-l);}
+.score-badge{position:absolute;top:8px;left:8px;background:var(--green);color:#fff;font-family:var(--syne);font-size:12px;font-weight:700;padding:3px 8px;border-radius:2px;}
+.score-badge.s-mid{background:var(--amber);}
+.score-badge.s-low{background:var(--accent);}
+.score-badge.s-none{background:var(--ink3);}
+.src-badges{position:absolute;bottom:8px;left:8px;display:flex;gap:4px;z-index:5;}
+.src-badge-pill{font-size:9px;font-weight:700;padding:2px 7px;border-radius:2px;font-family:var(--mono);letter-spacing:.04em;}
+.src-as24{background:#f5f500;color:#1A1714;}
+.src-mde{background:#68298a;color:#fff;}
+.src-merged{background:var(--ink);color:#fff;}
+.car-card{cursor:pointer;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal{background:var(--surface);border-radius:var(--r);max-width:700px;width:100%;max-height:90vh;overflow-y:auto;position:relative;}
+.modal-hdr{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:10;}
+.modal-title{font-family:var(--syne);font-size:16px;font-weight:700;}
+.modal-body{padding:20px;}
+.modal-img{width:100%;height:220px;object-fit:cover;border-radius:var(--r);margin-bottom:16px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:48px;color:var(--border);}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.detail-item{padding:10px 12px;background:var(--surface2);border-radius:var(--r);transition:background .15s;}
+.detail-item:hover{background:var(--border2);}
+.detail-label{font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;}
+.detail-val{font-size:13px;font-weight:500;}
+.detail-item[style*="blue-l"]{border:1px solid rgba(26,74,138,0.2);}
+.cost-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px;}
+.cs-item{text-align:center;padding:12px 8px;background:var(--surface2);border-radius:var(--r);}
+.cs-val{font-family:var(--syne);font-size:15px;font-weight:700;margin-bottom:3px;}
+.cs-label{font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;}
+
+/* ALERTS */
+.alert{padding:11px 14px;border-radius:var(--r);font-size:12px;margin-bottom:14px;display:flex;align-items:flex-start;gap:9px;}
+.alert-info{background:var(--blue-l);color:var(--blue);border:1px solid #90A8D0;}
+.alert-warn{background:var(--amber-l);color:var(--amber);border:1px solid #E8C090;}
+.alert-green{background:var(--green-l);color:var(--green);border:1px solid #90C0A0;}
+
+/* ANALYSIS NAME */
+.analysis-name{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+.name-input{font-family:var(--syne);font-size:16px;font-weight:700;border:none;background:transparent;color:var(--ink);outline:none;border-bottom:2px solid transparent;transition:border-color .15s;flex:1;}
+.name-input:focus{border-bottom-color:var(--accent);}
+
+/* SAVED ANALYSES */
+.analyses-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+.analysis-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer;transition:all .2s;position:relative;}
+.analysis-card:hover{border-color:var(--ink2);box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.ac-title{font-family:var(--syne);font-size:14px;font-weight:700;margin-bottom:3px;}
+.ac-sub{font-size:11px;color:var(--ink3);margin-bottom:12px;}
+.ac-stats{display:flex;gap:12px;}
+.ac-stat{display:flex;flex-direction:column;gap:2px;}
+.ac-stat-val{font-family:var(--syne);font-size:16px;font-weight:700;}
+.ac-stat-label{font-size:10px;color:var(--ink3);}
+.ac-del{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;color:var(--ink3);font-size:14px;padding:4px;}
+.ac-del:hover{color:var(--accent);}
+
+/* EMPTY */
+.empty{text-align:center;padding:50px 20px;color:var(--ink3);}
+.empty-icon{font-size:36px;margin-bottom:14px;opacity:.3;}
+.empty-text{font-size:12px;line-height:1.7;max-width:280px;margin:0 auto;}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .sidebar{transform:translateX(-220px);}
+  .sidebar.open{transform:translateX(0);}
+  .main{margin-left:0;}
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .content{padding:14px;}
+  .topbar{padding:12px 14px;}
+  .wf-steps{flex-direction:column;gap:0;}
+  .wf-step{border-right:none;border-bottom:1px solid var(--border);}
+  .wf-step:last-child{border-bottom:none;}
+  .detail-grid{grid-template-columns:1fr;}
+  .cost-strip{grid-template-columns:1fr 1fr;}
+  .market-hdr{flex-direction:column;}
+  .config-grid{grid-template-columns:1fr!important;}
+  .hamburger{display:flex!important;}
+  .modal-overlay{padding:0;}
+  .modal{max-height:100vh;border-radius:0;}
+  .car-grid{grid-template-columns:1fr;}
+}
+.hamburger{display:none;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--border);background:none;cursor:pointer;border-radius:var(--r);font-size:16px;color:var(--ink2);}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150;}
+.overlay.show{display:block;}
+.hidden{display:none!important;}
+.search-select{position:relative;}
+.search-select input{width:100%;cursor:pointer;}
+.search-select-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--accent);border-top:none;border-radius:0 0 var(--r) var(--r);max-height:220px;overflow-y:auto;z-index:300;box-shadow:0 4px 12px rgba(0,0,0,.12);}
+.search-select-dropdown.hidden{display:none!important;}
+.ss-option{padding:8px 12px;cursor:pointer;font-size:12px;font-family:var(--mono);}
+.ss-option:hover,.ss-option.focused{background:var(--accent-l);color:var(--accent);}
+.ss-option.no-results{color:var(--ink3);cursor:default;}
+.ss-option.no-results:hover{background:none;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);}
+</style>
+</head>
+<body>
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay hidden" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<!-- SV Review Modal -->
+<div class="modal-overlay hidden" id="sv-modal-overlay" onclick="closeSVModal(event)">
+  <div class="modal" style="max-width:800px;">
+    <div class="modal-hdr" style="position:sticky;top:0;background:var(--surface);z-index:10;">
+      <div>
+        <div class="modal-title">📊 Rever Mercado PT — StandVirtual</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:2px;">Seleciona quais os anúncios que entram na análise de mercado</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-ghost btn-sm" onclick="svSelectAll(true)">✓ Todos</button>
+        <button class="btn btn-ghost btn-sm" onclick="svSelectAll(false)">✗ Nenhum</button>
+        <button onclick="closeSVModal()" style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--ink3);padding:4px;">✕</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div id="sv-modal-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid var(--border);">
+        <div style="font-size:12px;color:var(--ink3);" id="sv-modal-count"></div>
+        <button class="btn btn-primary" onclick="confirmarReverMercado()">Confirmar e Recalcular →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">Auto<span>Import</span></div>
+    <div class="logo-sub">Plataforma de Importação</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-label">Principal</div>
+    <button class="nav-item active" onclick="goView('dashboard')"><span class="nav-icon">◈</span>Dashboard</button>
+    <button class="nav-item" onclick="goView('analise')"><span class="nav-icon">⊕</span>Nova Análise</button>
+    <button class="nav-item" onclick="goView('favoritos')"><span class="nav-icon">♥</span>Favoritos<span class="nav-badge" id="fav-badge">0</span></button>
+    <button class="nav-item" onclick="goView('historico')"><span class="nav-icon">≡</span>Análises Guardadas<span class="nav-badge" id="hist-badge">0</span></button>
+    <div class="nav-label" style="margin-top:8px;">Sistema</div>
+    <button class="nav-item" onclick="goView('config')"><span class="nav-icon">⚙</span>Configurações</button>
+  </nav>
+  <div class="sidebar-footer">v0.1.5 · ISV AT 2026 · 3 Fontes</div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="hamburger" id="hamburger" onclick="openSidebar()">☰</button>
+      <button id="back-btn" onclick="goBack()" class="hidden" style="border:1px solid var(--border);background:transparent;color:var(--ink2);padding:6px 10px;border-radius:var(--r);cursor:pointer;font-size:14px;display:flex;align-items:center;gap:5px;font-family:var(--mono);">← Voltar</button>
+      <div>
+        <div class="page-title" id="pg-title">Dashboard</div>
+        <div class="page-sub" id="pg-sub">Resumo e favoritos</div>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="goView('analise')">+ Nova Análise</button>
+  </div>
+
+  <div class="content">
+
+    <!-- ══════════ DASHBOARD ══════════ -->
+    <div class="view active" id="view-dashboard">
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:16px;">
+        <button class="btn btn-ghost btn-sm" onclick="exportarDados()" title="Exporta todas as análises e favoritos para partilhar">↑ Exportar dados</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('import-input').click()" title="Importa dados partilhados por outro utilizador">↓ Importar dados</button>
+        <input type="file" id="import-input" accept=".json" style="display:none;" onchange="importarDados(this)">
+      </div>
+<!-- stats removed per user request -->
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">♥ Favoritos</div><button class="btn btn-ghost btn-sm" onclick="goView('favoritos')">Ver todos →</button></div>
+        <div id="fav-preview"><div class="empty"><div class="empty-icon">♥</div><div class="empty-text">Nenhum favorito ainda.<br>Guarda anúncios durante a análise.</div></div></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Últimas Análises</div><button class="btn btn-ghost btn-sm" onclick="goView('historico')">Ver todas →</button></div>
+        <div id="dash-analyses"><div class="empty"><div class="empty-icon">◈</div><div class="empty-text">Nenhuma análise ainda.<br>Clica em "Nova Análise" para começar.</div></div></div>
+      </div>
+    </div>
+
+    <!-- ══════════ NOVA ANÁLISE ══════════ -->
+    <div class="view" id="view-analise">
+      <div class="analysis-name">
+        <span style="font-size:13px;color:var(--ink3);">Nome:</span>
+        <input class="name-input" id="analysis-name" value="Nova Análise" placeholder="Nome da análise">
+        <span style="font-size:11px;color:var(--ink3);" id="analysis-date"></span>
+      </div>
+
+      <div class="wf-steps" id="wf-steps">
+        <div class="wf-step active" id="ws1"><div class="wf-num">1</div><div class="wf-lbl">Origem (AS24 / Mobile.de)</div></div>
+        <div class="wf-step" id="ws2"><div class="wf-num">2</div><div class="wf-lbl">Referência (StandVirtual)</div></div>
+        <div class="wf-step" id="ws3"><div class="wf-num">3</div><div class="wf-lbl">Processamento IA</div></div>
+        <div class="wf-step" id="ws4"><div class="wf-num">4</div><div class="wf-lbl">Análise de Mercado + Resultados</div></div>
+      </div>
+
+      <!-- STEP 1: Search Form -->
+      <div id="wf-step1">
+        <div class="card">
+          <div class="card-hdr">
+            <div class="card-title">1 — Pesquisa de anúncios</div>
+            <div style="display:flex;gap:6px;">
+              <button id="btn-mode-search" onclick="setInputMode('search')" style="padding:5px 12px;font-family:var(--mono);font-size:11px;border:none;cursor:pointer;border-radius:var(--r);background:var(--accent);color:#fff;">🔍 Pesquisa automática</button>
+              <button id="btn-mode-upload" onclick="setInputMode('upload')" style="padding:5px 12px;font-family:var(--mono);font-size:11px;border:none;cursor:pointer;border-radius:var(--r);background:var(--surface);color:var(--ink2);border:1px solid var(--border);">📄 Upload CSV</button>
+            </div>
+          </div>
+          <div class="card-body">
+
+            <!-- MODO PESQUISA AUTOMÁTICA -->
+            <div id="mode-search">
+              <div id="apify-key-warning" class="alert alert-warn hidden" style="margin-bottom:14px;">
+                ⚠️ API key do Apify não configurada. Vai a <strong>Configurações</strong> e insere a tua key para usar a pesquisa automática.
+              </div>
+
+              <!-- AS24 URL -->
+              <div style="margin-bottom:14px;">
+                <div style="font-size:12px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+                  <span style="background:#f5f500;color:#1A1714;font-size:10px;font-weight:700;padding:2px 7px;border-radius:2px;">AS24</span>
+                  AutoScout24
+                </div>
+                <div style="font-size:11px;color:var(--ink3);margin-bottom:8px;">
+                  Vai ao <a href="https://www.autoscout24.com" target="_blank" style="color:var(--accent);">AutoScout24</a>, faz a pesquisa com os filtros que queres e copia o URL da página de resultados.
+                </div>
+                <div style="display:flex;gap:8px;">
+                  <input class="form-input" id="as24-url-input" placeholder="https://www.autoscout24.com/lst/porsche/991?..." style="flex:1;font-size:12px;" oninput="updateAS24UrlStatus()">
+                  <button class="btn btn-primary btn-sm" id="btn-as24-url-fetch" onclick="fetchAS24FromUrl()" disabled>Pesquisar</button>
+                </div>
+                <div id="as24-url-status" style="font-size:11px;margin-top:4px;"></div>
+                <div id="pill-as24" class="hidden" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;">
+                  <span class="file-pill">✓ <span id="pill-as24-name"></span></span>
+                  <button class="btn btn-ghost btn-sm" onclick="clearOriginFile('as24')">✕</button>
+                </div>
+              </div>
+
+
+              <!-- MDE URL manual -->
+              <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border2);">
+                <div style="font-size:12px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+                  <span style="background:#68298a;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:2px;">MDE</span>
+                  Mobile.de
+                </div>
+                <div style="font-size:11px;color:var(--ink3);margin-bottom:8px;">
+                  Vai ao <a href="https://suchen.mobile.de" target="_blank" style="color:var(--accent);">Mobile.de</a>, faz a pesquisa com os filtros que queres e copia o URL da página de resultados.
+                </div>
+                <div style="display:flex;gap:8px;">
+                  <input class="form-input" id="mde-url-input" placeholder="https://suchen.mobile.de/fahrzeuge/search.html?..." style="flex:1;font-size:12px;" oninput="updateMDEUrlStatus()">
+                  <button class="btn btn-primary btn-sm" id="btn-mde-fetch" onclick="fetchMDEFromUrl()" disabled>Pesquisar</button>
+                </div>
+                <div id="mde-url-status" style="font-size:11px;margin-top:4px;"></div>
+                <div id="pill-mde" class="hidden" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;">
+                  <span class="file-pill">✓ <span id="pill-mde-name"></span></span>
+                  <button class="btn btn-ghost btn-sm" onclick="clearOriginFile('mde')">✕</button>
+                </div>
+              </div>
+
+
+            </div>
+
+            <!-- MODO UPLOAD CSV (mantido como alternativa) -->
+            <div id="mode-upload" class="hidden">
+              <div class="alert alert-info" style="margin-bottom:14px;">Modo manual — exporta os CSVs do Apify e carrega aqui.</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+                <div>
+                  <div style="font-family:var(--syne);font-size:13px;font-weight:600;margin-bottom:8px;">AutoScout24</div>
+                  <div class="drop" id="dz-as24" onclick="document.getElementById('fi-as24').click()">
+                    <input type="file" accept=".csv" id="fi-as24" style="display:none" onchange="handleOriginFile('as24',this.files[0])">
+                    <div class="drop-icon">📄</div>
+                    <div class="drop-text"><strong>Arrasta CSV AS24</strong><br>ou clica para selecionar</div>
+                  </div>
+                  <div id="pill-as24" class="hidden" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;">
+                    <span class="file-pill">✓ <span id="pill-as24-name"></span></span>
+                    <button class="btn btn-ghost btn-sm" onclick="clearOriginFile('as24')">✕</button>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-family:var(--syne);font-size:13px;font-weight:600;margin-bottom:8px;">Mobile.de</div>
+                  <div class="drop" id="dz-mde" onclick="document.getElementById('fi-mde').click()">
+                    <input type="file" accept=".csv" id="fi-mde" style="display:none" onchange="handleOriginFile('mde',this.files[0])">
+                    <div class="drop-icon">📄</div>
+                    <div class="drop-text"><strong>Arrasta CSV Mobile.de</strong><br>ou clica para selecionar</div>
+                  </div>
+                  <div id="pill-mde" class="hidden" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;">
+                    <span class="file-pill">✓ <span id="pill-mde-name"></span></span>
+                    <button class="btn btn-ghost btn-sm" onclick="clearOriginFile('mde')">✕</button>
+                  </div>
+                </div>
+              </div>
+              <div id="step1-note" class="alert alert-info hidden">Pelo menos um ficheiro carregado.</div>
+              <button class="btn btn-primary" id="btn-step1-next" onclick="goStep(2)" disabled>Continuar →</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: SV Reference -->
+      <div id="wf-step2" class="hidden">
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">2 — Referência de mercado PT</div><span style="font-size:11px;color:var(--ink3);">StandVirtual — anúncios PT do mesmo modelo</span></div>
+          <div class="card-body">
+            <div id="sv-auto-status" class="alert alert-green hidden">✓ StandVirtual pesquisado — <span id="sv-auto-count"></span> anúncios encontrados</div>
+
+
+            <div id="sv-manual-section">
+              <div class="alert alert-info" style="margin-bottom:14px;">
+                O StandVirtual usa slugs internos que variam por modelo e geração. A forma mais fiável é colares directamente o URL da pesquisa.<br>
+                <strong>Como fazer:</strong> vai ao StandVirtual, faz a pesquisa com os filtros que queres, e copia o URL da página de resultados.
+              </div>
+
+              <!-- URL Input -->
+              <div style="margin-bottom:14px;">
+                <div class="form-note" style="margin-bottom:6px;">URL da pesquisa StandVirtual</div>
+                <div style="display:flex;gap:8px;">
+                  <input class="form-input" id="sv-url-input" placeholder="https://www.standvirtual.com/carros/porsche/991/desde-2015?..." style="flex:1;" oninput="updateSVUrlStatus()">
+                  <button class="btn btn-primary btn-sm" id="btn-sv-fetch" onclick="fetchSVFromUrl()" disabled>🔍 Pesquisar</button>
+                </div>
+                <div id="sv-url-status" style="font-size:11px;color:var(--ink3);margin-top:4px;"></div>
+              </div>
+
+              <div style="text-align:center;font-size:11px;color:var(--ink3);margin:12px 0;">— ou carrega CSV exportado do Apify —</div>
+
+              <div class="drop" id="dz-sv" onclick="document.getElementById('fi-sv').click()">
+                <input type="file" accept=".csv" id="fi-sv" style="display:none" onchange="handleSVFile(this.files[0])">
+                <div class="drop-icon">📊</div>
+                <div class="drop-text"><strong>Arrasta CSV StandVirtual</strong><br>ou clica para selecionar</div>
+              </div>
+              <div id="pill-sv" class="hidden" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;">
+                <span class="file-pill">✓ <span id="pill-sv-name"></span></span>
+                <button class="btn btn-ghost btn-sm" onclick="clearSVFile()">✕</button>
+              </div>
+            </div>
+            <div style="margin-top:14px;display:flex;gap:10px;">
+              <button class="btn btn-ghost" onclick="goStep(1)">← Voltar</button>
+              <button class="btn btn-primary" id="btn-step2-next" onclick="reviewSV()" disabled>Rever anúncios SV →</button>
+            </div>
+            <!-- SV Review panel (shown after upload) -->
+            <div id="sv-review-panel" class="hidden" style="margin-top:20px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+                <div>
+                  <div style="font-family:var(--syne);font-size:14px;font-weight:700;">Anúncios StandVirtual</div>
+                  <div style="font-size:11px;color:var(--ink3);">Seleciona quais entram na análise de mercado. Desmarca versões ou preços que não correspondam ao modelo que estás a importar.</div>
+                </div>
+                <div style="display:flex;gap:8px;">
+                  <button class="btn btn-ghost btn-sm" onclick="svSelectAll(true)">✓ Todos</button>
+                  <button class="btn btn-ghost btn-sm" onclick="svSelectAll(false)">✗ Nenhum</button>
+                </div>
+              </div>
+              <div id="sv-review-list" style="display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto;"></div>
+              <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                <div style="font-size:12px;color:var(--ink3);" id="sv-selected-count"></div>
+                <button class="btn btn-primary" id="btn-sv-confirm" onclick="goStep(3)">Confirmar e Processar →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: Processing -->
+      <div id="wf-step3" class="hidden">
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">A processar</div></div>
+          <div class="card-body" style="text-align:center;padding:40px 20px;">
+            <div id="proc-cars-anim" style="font-size:56px;margin-bottom:20px;display:inline-block;animation:carDrive 1s ease-in-out infinite alternate;">🚗</div>
+            <div style="font-family:var(--syne);font-size:18px;font-weight:700;margin-bottom:8px;" id="proc-phase-title">A preparar...</div>
+            <div style="font-size:13px;color:var(--ink3);margin-bottom:24px;min-height:20px;" id="proc-label">A iniciar processamento</div>
+            <div style="max-width:400px;margin:0 auto 20px;">
+              <div class="prog-bar pulse" id="proc-bar" style="height:4px;border-radius:2px;">
+                <div class="prog-fill" id="proc-fill" style="height:100%;"></div>
+              </div>
+            </div>
+            <div id="proc-stats" style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;"></div>
+            <div id="proc-count" style="display:none;"></div>
+            <div id="proc-log" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4: Results -->
+      <div id="wf-step4" class="hidden">
+        <!-- Market Header -->
+        <div class="market-hdr" id="market-hdr"></div>
+
+        <!-- Config override -->
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Ajuste de Custos</div><span style="font-size:11px;color:var(--ink3);">Valores das Configurações — editável por análise</span></div>
+          <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+            <div>
+              <div class="form-note" style="margin-bottom:4px;">Legalização Total (€)</div>
+              <input class="form-input" type="number" id="ov-legal" onchange="recalcResults()" style="width:100%;">
+            </div>
+            <div>
+              <div class="form-note" style="margin-bottom:4px;">Norma CO2 padrão</div>
+              <select class="form-input" id="ov-norma" onchange="applyNormaOverride(this.value)" style="width:100%;">
+                <option value="WLTP">WLTP (2020+)</option>
+                <option value="NEDC">NEDC (até 2019)</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:flex-end;">
+              <button class="btn btn-ghost btn-sm" onclick="saveAnalysis()">💾 Guardar Análise</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Car grid -->
+        <div class="card-hdr" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r) var(--r) 0 0;margin-bottom:0;">
+          <div class="card-title">Resultados — <span id="res-count">0</span> anúncios</div>
+          <div style="display:flex;gap:8px;">
+            <select class="form-input" id="sort-select" onchange="renderResults()" style="font-size:11px;padding:5px 10px;">
+              <option value="score">Ordenar: Score</option>
+              <option value="marg_liq">Ordenar: Margem Líq.</option>
+              <option value="marg_bruta">Ordenar: Margem Bruta</option>
+              <option value="preco">Ordenar: Preço</option>
+              <option value="isv">Ordenar: ISV</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="exportCSV()">↓ CSV</button>
+          </div>
+        </div>
+        <div id="car-grid-wrap" style="border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r) var(--r);padding:14px;background:var(--surface);margin-bottom:16px;">
+          <div class="car-grid" id="car-grid"></div>
+        </div>
+
+        <!-- Eliminados -->
+        <div id="eliminated-section" class="hidden" style="margin-bottom:16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;" onclick="toggleEliminados()">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-family:var(--syne);font-size:13px;font-weight:600;color:var(--ink3);">Anúncios Eliminados</span>
+              <span id="elim-count-badge" style="background:var(--accent);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;">0</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:11px;color:var(--ink3);">Clica para ver · podes reverter qualquer eliminado</span>
+              <span id="elim-toggle-icon" style="color:var(--ink3);">▸</span>
+            </div>
+          </div>
+          <div id="eliminated-grid" class="hidden" style="border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r) var(--r);padding:14px;background:var(--surface);opacity:0.75;">
+            <div class="car-grid" id="elim-car-grid"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ FAVORITOS ══════════ -->
+    <div class="view" id="view-favoritos">
+      <div id="fav-empty" class="empty"><div class="empty-icon">♥</div><div class="empty-text">Nenhum favorito ainda.<br>Clica no ♥ em qualquer anúncio.</div></div>
+      <div id="fav-grid" class="car-grid hidden"></div>
+    </div>
+
+    <!-- ══════════ HISTÓRICO ══════════ -->
+    <div class="view" id="view-historico">
+      <div id="hist-empty" class="empty"><div class="empty-icon">≡</div><div class="empty-text">Nenhuma análise guardada.<br>Processa carros e clica em "Guardar Análise".</div></div>
+      <div id="hist-grid" class="analyses-grid hidden"></div>
+    </div>
+
+    <!-- ══════════ CONFIGURAÇÕES ══════════ -->
+    <div class="view" id="view-config">
+
+      <!-- API Keys -->
+      <div class="card" style="border:2px solid var(--accent);">
+        <div class="card-hdr" style="background:var(--accent-l);">
+          <div class="card-title" style="color:var(--accent);">🔑 API Keys</div>
+          <span style="font-size:11px;color:var(--accent);">Obrigatórias para processamento IA e pesquisa</span>
+        </div>
+        <div class="card-body" style="padding-bottom:8px;">
+          <div style="font-size:11px;font-weight:600;margin-bottom:6px;">Anthropic (processamento IA)</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+            <input type="password" id="api-key-input" placeholder="sk-ant-api03-..."
+              style="flex:1;min-width:200px;font-family:var(--mono);font-size:12px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--r);outline:none;background:var(--surface);"
+              onchange="saveApiKey(this.value)">
+            <button class="btn btn-primary btn-sm" onclick="saveApiKey(document.getElementById('api-key-input').value)">Guardar</button>
+            <button class="btn btn-ghost btn-sm" onclick="toggleApiKeyVisibility()">👁</button>
+          </div>
+          <div style="font-size:11px;font-weight:600;margin-bottom:6px;">Apify (pesquisa automática)</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <input type="password" id="apify-key-input" placeholder="apify_api_..."
+              style="flex:1;min-width:200px;font-family:var(--mono);font-size:12px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--r);outline:none;background:var(--surface);"
+              onchange="saveApifyKey(this.value)">
+            <button class="btn btn-primary btn-sm" onclick="saveApifyKey(document.getElementById('apify-key-input').value)">Guardar</button>
+          </div>
+          <div id="apify-key-status" style="margin-top:6px;font-size:11px;"></div>
+          <div style="font-size:11px;font-weight:600;margin-top:14px;margin-bottom:6px;">Brave Search (pesquisa CO₂/cilindrada)</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <input type="password" id="brave-key-input" placeholder="BSA..."
+              style="flex:1;min-width:200px;font-family:var(--mono);font-size:12px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--r);outline:none;background:var(--surface);"
+              onchange="saveBraveKey(this.value)">
+            <button class="btn btn-primary btn-sm" onclick="saveBraveKey(document.getElementById('brave-key-input').value)">Guardar</button>
+          </div>
+          <div id="brave-key-status" style="margin-top:6px;font-size:11px;"></div>
+          <div style="font-size:11px;font-weight:600;margin-top:14px;margin-bottom:6px;">Servidor de Sync (Railway)</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <input type="text" id="server-url-input" placeholder="https://autoimport-server.railway.app"
+              style="flex:1;min-width:200px;font-family:var(--mono);font-size:12px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--r);outline:none;background:var(--surface);"
+              onchange="saveServerUrl(this.value)">
+            <button class="btn btn-primary btn-sm" onclick="saveServerUrl(document.getElementById('server-url-input').value)">Guardar</button>
+          </div>
+          <div style="margin-top:6px;font-size:11px;color:var(--ink3);">URL do servidor Railway para sync automático e notificações.</div>
+        </div>
+        <div class="card-body" style="padding-top:0;">
+          <div id="api-key-status" style="font-size:11px;"></div>
+          <div style="margin-top:8px;font-size:11px;color:var(--ink3);line-height:1.6;">
+            As keys são guardadas apenas no teu browser (localStorage).<br>
+            Anthropic: <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent);">console.anthropic.com</a> → API Keys ·
+            Apify: <a href="https://console.apify.com/account/integrations" target="_blank" style="color:var(--accent);">console.apify.com</a> → Integrations ·
+            Brave: <a href="https://api.search.brave.com" target="_blank" style="color:var(--accent);">api.search.brave.com</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transporte -->
+      <div class="card">
+        <div class="card-hdr" style="flex-wrap:wrap;gap:10px;">
+          <div class="card-title">Transporte (€)</div>
+          <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;">
+            <button id="btn-transp-geral" onclick="setTransportMode('geral')" style="padding:5px 14px;font-family:var(--mono);font-size:11px;border:none;cursor:pointer;background:var(--accent);color:#fff;">Valor único UE</button>
+            <button id="btn-transp-pais" onclick="setTransportMode('pais')" style="padding:5px 14px;font-family:var(--mono);font-size:11px;border:none;cursor:pointer;background:var(--surface);color:var(--ink2);">Por país</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="transp-geral-body">
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+              <label style="font-size:12px;color:var(--ink2);flex:1;min-width:200px;">Custo de transporte para todos os países da UE</label>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <input class="form-input" type="number" id="transp-geral-val" value="750" style="width:110px;" onchange="updateTranspGeral()">
+                <span style="font-size:12px;color:var(--ink3);">€</span>
+              </div>
+            </div>
+            <div style="margin-top:8px;font-size:11px;color:var(--ink3);">Este valor será aplicado a todos os países automaticamente.</div>
+          </div>
+          <div id="transp-pais-body" class="hidden" id="cfg-transport"></div>
+        </div>
+        <div style="padding:0 18px 18px;">
+          <button class="btn btn-primary btn-sm" onclick="saveConfig()">Guardar Configurações</button>
+        </div>
+      </div>
+
+      <!-- Legalização -->
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Custos de Legalização (€)</div></div>
+        <div class="card-body">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--green-l);border-radius:var(--r);margin-bottom:14px;">
+            <span style="font-size:13px;font-weight:600;">Total Legalização</span>
+            <span style="font-family:var(--syne);font-size:16px;font-weight:700;" id="cfg-legal-total">0 €</span>
+          </div>
+          <div id="cfg-legal-rows"></div>
+        </div>
+        <div style="padding:0 18px 18px;">
+          <button class="btn btn-primary btn-sm" onclick="saveConfig()">Guardar Configurações</button>
+        </div>
+      </div>
+      <!-- ISV colapsável -->
+      <div class="card">
+        <div class="card-hdr" style="cursor:pointer;" onclick="toggleISVTable()">
+          <div class="card-title">Tabela ISV 2026 — Referência AT</div>
+          <span id="isv-toggle-icon" style="font-size:14px;color:var(--ink3);transition:transform .2s;">▸ Ver tabela</span>
+        </div>
+        <div id="isv-table-body" class="hidden">
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+              <div>
+                <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:10px;">Descontos por Idade</div>
+                <table style="width:100%;font-size:11px;">
+                  <tr style="background:var(--surface2)"><th style="padding:6px 10px;text-align:left;">Escalão</th><th style="padding:6px 10px;text-align:right;">Desconto</th></tr>
+                  <tr><td style="padding:5px 10px;border-bottom:1px solid var(--border2);">Até 1 ano</td><td style="text-align:right;padding:5px 10px;border-bottom:1px solid var(--border2);font-weight:600;color:var(--green);">10%</td></tr>
+                  <tr><td style="padding:5px 10px;border-bottom:1px solid var(--border2);">1–2 anos</td><td style="text-align:right;padding:5px 10px;border-bottom:1px solid var(--border2);font-weight:600;color:var(--green);">20%</td></tr>
+                  <tr><td style="padding:5px 10px;border-bottom:1px solid var(--border2);">2–3 anos</td><td style="text-align:right;padding:5px 10px;border-bottom:1px solid var(--border2);font-weight:600;color:var(--green);">28%</td></tr>
+                  <tr><td style="padding:5px 10px;border-bottom:1px solid var(--border2);">3–4 anos</td><td style="text-align:right;padding:5px 10px;border-bottom:1px solid var(--border2);font-weight:600;color:var(--green);">35%</td></tr>
+                  <tr><td style="padding:5px 10px;border-bottom:1px solid var(--border2);">4–5 anos</td><td style="text-align:right;padding:5px 10px;border-bottom:1px solid var(--border2);font-weight:600;color:var(--green);">43%</td></tr>
+                  <tr><td style="padding:5px 10px;border-bottom:1px solid var(--border2);">5–6 anos</td><td style="text-align:right;padding:5px 10px;border-bottom:1px solid var(--border2);font-weight:600;color:var(--green);">52%</td></tr>
+                  <tr><td style="padding:5px 10px;border-bottom:1px solid var(--border2);">6–7 anos</td><td style="text-align:right;padding:5px 10px;border-bottom:1px solid var(--border2);font-weight:600;color:var(--green);">60%</td></tr>
+                  <tr><td style="padding:5px 10px;border-bottom:1px solid var(--border2);">7–8 anos</td><td style="text-align:right;padding:5px 10px;border-bottom:1px solid var(--border2);font-weight:600;color:var(--green);">65%</td></tr>
+                  <tr><td style="padding:5px 10px;border-bottom:1px solid var(--border2);">8–9 anos</td><td style="text-align:right;padding:5px 10px;border-bottom:1px solid var(--border2);font-weight:600;color:var(--green);">70%</td></tr>
+                  <tr><td style="padding:5px 10px;border-bottom:1px solid var(--border2);">9–10 anos</td><td style="text-align:right;padding:5px 10px;border-bottom:1px solid var(--border2);font-weight:600;color:var(--green);">75%</td></tr>
+                  <tr><td style="padding:5px 10px;">+10 anos</td><td style="text-align:right;padding:5px 10px;font-weight:600;color:var(--green);">80%</td></tr>
+                </table>
+              </div>
+              <div>
+                <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:10px;">Benefícios Especiais</div>
+                <div style="display:flex;flex-direction:column;gap:8px;font-size:11px;">
+                  <div style="padding:8px 12px;background:var(--blue-l);border-radius:var(--r);">⚡ <strong>Elétrico</strong> → ISV = 0€</div>
+                  <div style="padding:8px 12px;background:var(--green-l);border-radius:var(--r);">🔋 <strong>PHEV</strong> → 25% do ISV total</div>
+                  <div style="padding:8px 12px;background:#F0E8F5;border-radius:var(--r);">⚡ <strong>Híbrido Mild</strong> → 60% do ISV total</div>
+                  <div style="padding:8px 12px;background:var(--amber-l);border-radius:var(--r);">⚠️ <strong>Gasóleo sem DPF/FAP</strong> → +500€</div>
+                  <div style="padding:8px 12px;background:var(--surface2);border-radius:var(--r);">📋 <strong>Norma</strong>: 2020+ = WLTP · 2019- = verificar</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// STATE
+// Server URL — update after Railway deploy
+const SERVER_URL = localStorage.getItem('ai_server_url') || '';
+// ══════════════════════════════════════════════
+const DEF_CFG = {
+  transport:{
+    'Alemanha':750,'Bélgica':650,'França':700,'Holanda':700,
+    'Espanha':550,'Itália':900,'Áustria':750,'Portugal':300,
+    'Suíça':950,'Reino Unido':900,'Polónia':800,'República Checa':820,
+    'Dinamarca':850,'Suécia':880,'Noruega':900,'Finlândia':950,
+    'Hungria':780,'Roménia':820,'Luxemburgo':680,'Irlanda':870
+  },
+  legal:{'Inspeção IPO':76,'DAV/Alfândega':35,'Homologação COC':60,'Registo+DUA':55,'Margem administrativa':200,'Margem preparação':2000}
+};
+let cfg = JSON.parse(localStorage.getItem('ai_cfg2')||'null') || DEF_CFG;
+let favs = JSON.parse(localStorage.getItem('ai_favs')||'[]');
+let analyses = JSON.parse(localStorage.getItem('ai_analyses')||'[]');
+
+// Current analysis state
+let originRows = []; // AS24 + Mobile.de combined
+let svRows = [];     // StandVirtual
+let processedOrigin = [];
+let svMarket = {};   // computed from SV
+let calcRows = [];
+let currentStep = 1;
+
+// ══════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════
+const VIEWS = {
+  dashboard:['Dashboard','Resumo e favoritos'],
+  analise:['Nova Análise','Upload · IA · Mercado · Resultados'],
+  favoritos:['Favoritos','Anúncios guardados'],
+  historico:['Análises Guardadas','Histórico de análises'],
+  config:['Configurações','Custos e tabelas ISV']
+};
+let viewHistory = ['dashboard'];
+
+function goView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  document.querySelector(`[onclick="goView('${id}')"]`)?.classList.add('active');
+  const [t,s]=VIEWS[id]||['',''];
+  document.getElementById('pg-title').textContent=t;
+  document.getElementById('pg-sub').textContent=s;
+  // Back button: show if not dashboard
+  const backBtn = document.getElementById('back-btn');
+  if(backBtn) backBtn.classList.toggle('hidden', id==='dashboard');
+  if(id!==viewHistory[viewHistory.length-1]) viewHistory.push(id);
+  if(id==='config')renderConfig();
+  if(id==='dashboard')renderDashboard();
+  if(id==='historico')renderHistorico();
+  if(id==='favoritos')renderFavoritos();
+  closeSidebar();
+}
+
+function goBack(){
+  if(viewHistory.length>1){ viewHistory.pop(); goView(viewHistory[viewHistory.length-1]); }
+  else goView('dashboard');
+}
+function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('overlay').classList.add('show');}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show');}
+
+// ══════════════════════════════════════════════
+// WORKFLOW STEPS
+// ══════════════════════════════════════════════
+function goStep(n){
+  currentStep=n;
+  [1,2,3,4].forEach(i=>{
+    const s=document.getElementById('wf-step'+i);
+    const ws=document.getElementById('ws'+i);
+    if(s) s.classList.toggle('hidden', i!==n);
+    if(ws){
+      ws.classList.remove('active','done');
+      if(i===n) ws.classList.add('active');
+      if(i<n) ws.classList.add('done');
+    }
+  });
+  if(n===3) startProcessing();
+}
+
+// ══════════════════════════════════════════════
+// FILE HANDLING
+// ══════════════════════════════════════════════
+let files = {as24:null, mde:null, sv:null};
+
+function handleOriginFile(src, file){
+  if(!file?.name.endsWith('.csv'))return alert('Seleciona um ficheiro .csv');
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const parsed=parseCSV(e.target.result);
+    if(src==='as24'){files.as24={rows:parsed.rows,name:file.name};}
+    else{files.mde={rows:parsed.rows,name:file.name};}
+    document.getElementById('pill-'+src).classList.remove('hidden');
+    document.getElementById('dz-'+src).classList.add('hidden');
+    document.getElementById('pill-'+src+'-name').textContent=`${file.name} (${parsed.rows.length})`;
+    updateStep1();
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+function clearOriginFile(src){
+  files[src]=null;
+  document.getElementById('pill-'+src).classList.add('hidden');
+  document.getElementById('dz-'+src).classList.remove('hidden');
+  document.getElementById('fi-'+src).value='';
+  updateStep1();
+}
+
+function updateStep1(){
+  const hasAny=files.as24||files.mde;
+  document.getElementById('btn-step1-next').disabled=!hasAny;
+  document.getElementById('step1-note').classList.toggle('hidden',!hasAny);
+}
+
+function handleSVFile(file){
+  if(!file?.name.endsWith('.csv'))return alert('Seleciona um ficheiro .csv');
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const parsed=parseCSV(e.target.result);
+    files.sv={rows:parsed.rows,name:file.name};
+    svSelectedRows=parsed.rows.map((_,i)=>i); // select all by default
+    // Hide review panel if re-uploading
+    const panel=document.getElementById('sv-review-panel');
+    if(panel) panel.classList.add('hidden');
+    document.getElementById('pill-sv').classList.remove('hidden');
+    document.getElementById('dz-sv').classList.add('hidden');
+    document.getElementById('pill-sv-name').textContent=`${file.name} (${parsed.rows.length})`;
+    document.getElementById('btn-step2-next').disabled=false;
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+function clearSVFile(){
+  files.sv=null;
+  document.getElementById('pill-sv').classList.add('hidden');
+  document.getElementById('dz-sv').classList.remove('hidden');
+  document.getElementById('fi-sv').value='';
+  document.getElementById('btn-step2-next').disabled=true;
+}
+
+function parseCSV(text){
+  // RFC 4180 compliant parser — handles newlines inside quoted fields
+  // (Mobile.de exports features lists with \n inside quoted cells)
+  text = text.replace(/^\uFEFF/,''); // remove BOM
+  const rows = [];
+  let row = [], cur = '', inQ = false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i], nx=text[i+1];
+    if(inQ){
+      if(ch==='"'&&nx==='"'){cur+='"';i++;} // escaped quote
+      else if(ch==='"'){inQ=false;}
+      else{cur+=ch;}
+    } else {
+      if(ch==='"'){inQ=true;}
+      else if(ch===','){row.push(cur.trim());cur='';}
+      else if(ch==='\r'&&nx==='\n'){row.push(cur.trim());cur='';rows.push(row);row=[];i++;}
+      else if(ch==='\n'||ch==='\r'){row.push(cur.trim());cur='';rows.push(row);row=[];}
+      else{cur+=ch;}
+    }
+  }
+  if(cur||row.length){row.push(cur.trim());rows.push(row);}
+  // Filter empty rows
+  const clean=rows.filter(r=>r.some(c=>c));
+  if(clean.length<2)return{rows:[]};
+  const headers=clean[0];
+  const data=clean.slice(1).map(r=>{
+    const o={};
+    headers.forEach((h,i)=>{ if(h) o[h]=(r[i]||'').trim(); });
+    return o;
+  }).filter(r=>Object.values(r).some(v=>v));
+  return{rows:data};
+}
+
+// ══════════════════════════════════════════════
+// ISV AT 2026 COMPLETO
+// ══════════════════════════════════════════════
+function calcISV(cil,co2,comb,norma,ano,temFiltro){
+  const c=(comb||'').toLowerCase().trim();
+  if(c==='elétrico'||c==='eletrico')return 0;
+  const idade=new Date().getFullYear()-ano;
+  let cc=cil<=1000?cil*1.09-849.03:cil<=1250?cil*1.18-850.69:cil*5.61-6194.88;
+  cc=Math.max(0,cc);
+  const isD=c==='gasóleo'||c==='gasoleo';
+  const isPH=c==='phev'||c==='híbrido plug-in';
+  const isHM=c==='híbrido mild'||c==='hibrido mild';
+  const n=isPH?'WLTP':(norma||'WLTP').toUpperCase();
+  const agw=g=>g<=110?g*.44-43.02:g<=115?g*1.10-115.80:g<=120?g*1.38-147.79:g<=130?g*5.27-619.17:g<=145?g*6.38-762.73:g<=175?g*41.54-5819.56:g<=195?g*51.38-7247.39:g<=235?g*193.01-34190.52:g*233.81-41910.96;
+  const agn=g=>g<=99?g*4.62-427:g<=115?g*8.09-750.99:g<=145?g*52.56-5903.94:g<=175?g*61.24-7140.17:g<=195?g*155.97-23627.27:g*205.65-33390.12;
+  const adw=g=>g<=110?g*1.72-11.50:g<=120?g*18.96-1906.19:g<=140?g*65.04-7360.85:g<=150?g*127.40-16080.57:g<=160?g*160.81-21176.06:g<=170?g*221.69-29227.38:g<=190?g*274.08-36987.98:g*282.35-38271.32;
+  const adn=g=>g<=79?g*5.78-439.04:g<=95?g*23.45-1848.58:g<=120?g*79.22-7195.63:g<=140?g*175.73-18924.92:g<=160?g*195.43-21720.92:g*268.42-33447.90;
+  let amb=isD?(n==='NEDC'?adn(co2):adw(co2)):(isPH?agw(co2):(n==='NEDC'?agn(co2):agw(co2)));
+  let bruto=cc+amb;
+  if(isPH)bruto=Math.max(100,bruto*0.25);
+  else if(isHM)bruto=Math.max(100,bruto*0.60);
+  else bruto=Math.max(100,bruto);
+  const ds=[0,.10,.20,.28,.35,.43,.52,.60,.65,.70,.75,.80];
+  const desc=idade<=0?0:idade<=10?ds[Math.min(idade,10)]:ds[11];
+  let isv=Math.max(100,Math.round(bruto*(1-desc)));
+  if(isD&&temFiltro!==true)isv+=500;
+  return isv;
+}
+
+function calcMarg(r){
+  const legal=parseFloat(document.getElementById('ov-legal')?.value||getLegalTotal());
+  const normaDefault=document.getElementById('ov-norma')?.value||'WLTP';
+  const norma=r.co2_norma||normaDefault;
+  const transp=cfg.transport[r.pais]||700;
+  const temF=String(r.filtro_particulas||'').toLowerCase()==='sim';
+  const isv=calcISV(r.cilindrada||0,r.co2||0,r.combustivel,r.co2_norma||norma,r.ano||2020,temF);
+  const custo=(r.preco||0)+transp+isv+legal;
+  // Use saved svRef on the row first, fallback to svMarket
+  const svRef=r.svRef||svMarket.preco_medio||0;
+  const mb=svRef?svRef-custo:null;
+  const ivaM=svRef?Math.round(0.23*(svRef-(r.preco||0))):null;
+  const ml=mb!=null&&ivaM!=null?mb-ivaM:null;
+  const mp=mb!=null&&custo>0?mb/custo:null;
+  const score=mp!=null?Math.min(100,Math.max(0,Math.round(mp*200))):null;
+  return{transp,isv,legal,custo,svRef,mb,ivaM,ml,mp,score};
+}
+
+function getLegalTotal(){return Object.values(cfg.legal).reduce((a,b)=>a+b,0);}
+
+// ══════════════════════════════════════════════
+// PROCESSING
+// ══════════════════════════════════════════════
+async function startProcessing(){
+  if(!checkApiKey()) return;
+  processedOrigin=[];
+  const allOrigin=[
+    ...(files.as24?.rows||[]).map(r=>({...r,_src:'as24'})),
+    ...(files.mde?.rows||[]).map(r=>({...r,_src:'mde'}))
+  ];
+  const svData=files.sv?.rows||[];
+  const total=allOrigin.length+svData.length;
+  let done=0;
+
+  log('Sistema',`${allOrigin.length} anúncios de origem + ${svData.length} do SV`,'ok');
+  log('IA','Fase 1: Normalizar AS24/Mobile.de','');
+  log('IA','Fase 2: Processar StandVirtual','');
+  log('IA','Fase 3: Cruzamento e análise de mercado','');
+
+  // FASE 1: Processar origem
+  const bsz=3;
+  for(let i=0;i<allOrigin.length;i+=bsz){
+    const batch=allOrigin.slice(i,Math.min(i+bsz,allOrigin.length));
+    try{
+      const r=await processBatch(batch);
+      // Post-process: validate mandatory fields for non-electrics
+      const validated = r.map(car => {
+        const isElec = (car.combustivel||'').toLowerCase().includes('elétri');
+        // Flag missing CO2 for non-electrics
+        if(!isElec && (!car.co2 || car.co2===0)){
+          car.co2_missing = true;
+          car.notas = (car.notas?car.notas+' | ':'') + '⚠️ CO2 em falta — editar no modal para recalcular ISV correctamente';
+        }
+        // Flag missing cilindrada for non-electrics
+        if(!isElec && (!car.cilindrada || car.cilindrada===0)){
+          car.cil_missing = true;
+          car.notas = (car.notas?car.notas+' | ':'') + '⚠️ Cilindrada em falta — editar no modal';
+        }
+        return car;
+      });
+      processedOrigin.push(...validated);
+      done+=batch.length;
+      updProg(done,total,`Fase 1: ${done}/${allOrigin.length} anúncios de origem...`);
+      validated.forEach((car,idx)=>{
+        const n=car.co2_inferred?'★CO2 ':car.cil_inferred?'★Cil ':'';
+        const warn=car.co2_missing?' ⚠️CO2':car.cil_missing?' ⚠️Cil':'';
+        const cls=car.co2_missing||car.cil_missing?'warn':'ok';
+        log(`#${i+idx+1}`,`${car.marca} ${car.modelo} ${car.ano} · ${n}ISV≈${calcISV(car.cilindrada||0,car.co2||0,car.combustivel,car.co2_norma||'WLTP',car.ano||2020,false).toLocaleString()}€${warn}`,cls);
+      });
+    }catch(e){
+      log('ERRO',`${e.message}`,'err');
+      batch.forEach(row=>processedOrigin.push(fallback(row)));
+      done+=batch.length;
+    }
+    if(i+bsz<allOrigin.length)await sleep(1200);
+  }
+
+  // ── SECOND PASS: fill missing CO2/cilindrada for non-electrics ──────
+  const missing = processedOrigin.filter(r => {
+    const isElec = (r.combustivel||'').toLowerCase().includes('elétri');
+    return !isElec && (r.co2_missing || r.cil_missing || !r.co2 || !r.cilindrada || r.is_fallback);
+  });
+
+  if(missing.length > 0){
+    updProg(allOrigin.length*0.7, allOrigin.length, `A preencher ${missing.length} campos em falta (CO2/cilindrada)...`);
+    const ph = document.getElementById('proc-phase-title');
+    if(ph) ph.textContent = `A pesquisar dados técnicos em falta...`;
+    const anim = document.getElementById('proc-cars-anim');
+    if(anim) anim.textContent = '🔍';
+
+    for(let i=0; i<missing.length; i+=2){
+      const batch2 = missing.slice(i, Math.min(i+2, missing.length));
+      let filled = null;
+      for(let att=1; att<=4; att++){
+        try{
+          filled = await fillMissingData(batch2);
+          break;
+        } catch(retryErr2){
+          if(att<4) await sleep(att * 3000);
+        }
+      }
+      try{
+      if(filled){
+        filled.forEach(f => {
+          const idx = processedOrigin.findIndex(r=>r.url===f.url);
+          if(idx!==-1){
+            if(f.co2 && f.co2>0){
+              processedOrigin[idx].co2=f.co2;
+              processedOrigin[idx].co2_inferred=true;
+              processedOrigin[idx].co2_missing=false;
+              processedOrigin[idx].co2_fonte=f.fonte_co2||'';
+              processedOrigin[idx].co2_confianca=f.confianca||'media';
+            }
+            if(f.cilindrada && f.cilindrada>0){
+              processedOrigin[idx].cilindrada=f.cilindrada;
+              processedOrigin[idx].cil_inferred=true;
+              processedOrigin[idx].cil_missing=false;
+              processedOrigin[idx].cil_fonte=f.fonte_cil||'';
+            }
+            processedOrigin[idx].notas = (processedOrigin[idx].notas||'').split('|').filter(n=>!n.includes('CO2 em falta')&&!n.includes('Cilindrada em falta')).join('|').trim();
+          }
+        });
+        await sleep(1500);
+      }} catch(e2){
+        // silently skip if second pass also fails
+      }
+    }
+  }
+
+  // ── Deduplicar AS24 + Mobile.de ──────────────────────────────────────
+  // Deduplicar AS24 + Mobile.de
+  if(files.as24 && files.mde){
+    const beforeCount = processedOrigin.length;
+    processedOrigin = deduplicateRows(processedOrigin);
+    log('Sistema',`Deduplicação: ${beforeCount} → ${processedOrigin.length} anúncios únicos`,'ok');
+  } else {
+    // Still add fontes array even without dedup
+    processedOrigin = processedOrigin.map(r=>({...r, fontes:[r.fonte||'AS24']}));
+  }
+
+  // FASE 2: Processar SV e calcular mercado
+  log('Sistema','Fase 2: A analisar mercado StandVirtual...','ok');
+  if(svData.length){
+    try{
+      svMarket=await analyzeSVMarket(svData);
+      log('Mercado PT',`${svMarket.count} anúncios · min ${fmt(svMarket.preco_min)}€ · med ${fmt(svMarket.preco_medio)}€ · max ${fmt(svMarket.preco_max)}€`,'ok');
+      log('Mercado PT',`Score de mercado: ${svMarket.market_score}/10 · ${svMarket.saturacao}`,'warn');
+      done+=svData.length;
+      updProg(done,total,'Fase 2: Análise de mercado concluída');
+    }catch(e){
+      log('ERRO',`SV: ${e.message}`,'err');
+      svMarket=computeSVFallback(svSelectedRows.length>0?svSelectedRows.map(i=>svData[i]).filter(Boolean):svData);
+    }
+  }else{
+    svMarket={count:0,preco_min:0,preco_medio:0,preco_max:0,km_medio:0,market_score:5,saturacao:'Sem dados SV',summary:'SV não carregado.'};
+  }
+
+  updProg(total,total,'Concluído!');
+  document.getElementById('proc-bar').classList.remove('pulse');
+  log('Sistema','Processamento completo · A gerar resultados...','ok');
+  await sleep(1500);
+
+  // FASE 3: Calcular resultados
+  eliminatedRows=[];
+  logStats={};
+  calcRows=processedOrigin.map(r=>({...r,...calcMarg(r)}));
+  document.getElementById('ov-legal').value=getLegalTotal();
+  document.getElementById('wf-step3').classList.add('hidden');
+  document.getElementById('wf-step4').classList.remove('hidden');
+  document.getElementById('ws3').classList.remove('active'); document.getElementById('ws3').classList.add('done');
+  document.getElementById('ws4').classList.add('active');
+  renderMarketHeader();
+  renderResults();
+  // Auto-save if this analysis is already saved
+  autoSaveCurrentAnalysis();
+}
+
+function autoSaveCurrentAnalysis(){
+  const name = document.getElementById('analysis-name')?.value;
+  if(!name) return;
+  // Find existing saved analysis with same name and update it
+  const idx = analyses.findIndex(a => a.name === name);
+  if(idx === -1) return; // not saved yet, skip
+  const curSvRef = svMarket.preco_medio || 0;
+  const wScore = calcRows.filter(r=>r.score!=null);
+  const wMarg = calcRows.filter(r=>r.ml!=null);
+  analyses[idx] = {
+    ...analyses[idx],
+    cars: calcRows,
+    eliminados: eliminatedRows,
+    market: svMarket,
+    svRows: files.sv?.rows || analyses[idx].svRows || [],
+    svSelected: svSelectedRows,
+    avgScore: wScore.length ? Math.round(wScore.reduce((s,r)=>s+(r.score||0),0)/wScore.length) : null,
+    avgMarg: wMarg.length ? Math.round(wMarg.reduce((s,r)=>s+(r.ml||0),0)/wMarg.length) : null,
+  };
+  localStorage.setItem('ai_analyses', JSON.stringify(analyses));
+  // Brief visual feedback on the save button
+  const btn = document.querySelector('[onclick="saveAnalysis()"]');
+  if(btn){ const orig=btn.textContent; btn.textContent='✓ Auto-guardado'; setTimeout(()=>btn.textContent=orig,2000); }
+}
+
+async function processBatch(batch){
+  const batchText=batch.map((row,i)=>{
+    const src=row._src||'as24';
+    const fields=extractFields(row,src);
+    return `Anúncio ${i+1} [${src.toUpperCase()}]:\n${JSON.stringify(fields,null,2)}`;
+  }).join('\n\n---\n\n');
+
+  const prompt=`Normaliza estes anúncios de carros. Devolve APENAS array JSON com campos:
+marca,modelo,submodelo,ano,km,combustivel("Elétrico"|"PHEV"|"Gasolina"|"Gasóleo"|"Híbrido Mild"),co2(g/km),co2_inferred(bool),co2_norma("WLTP"|"NEDC"),cilindrada(cc),cil_inferred(bool),potencia(cv),caixa("Automática"|"Manual"|"Semi-automática"),cor,carrocaria("SUV"|"Berlina"|"Carrinha"|"Coupé"|"Cabrio"|"Monovolume"),emissoes,lugares,iva_dedutivel("Sim"|"Não"|"Desconhecido"),pais,dealer,donos,inspecao,filtro_particulas("Sim"|"Não"|"Desconhecido"),preco,url,foto_url,fonte("AS24"|"MDE"),notas.
+
+REGRAS:
+Combustível: AS24 "Electric/Gasoline"→PHEV; "Electric"→Elétrico; "Diesel"→Gasóleo. MDE driveType="Electric motor"→Elétrico; "Plug-in Hybrid"→PHEV; "Mild Hybrid"→Híbrido Mild.
+CO2/Cil: Se 0 ou ausente (não-elétrico) → co2_inferred=true mas deixar 0 (segunda passagem trata). Extrair de "43 g/km (comb.)"→43. MDE kW→cv=kW×1.36. AS24 "(160hp)"→extrair.
+Outros: netPrice/amount MDE→iva_dedutivel="Sim". 2020+→WLTP. foto_url=images/0 ou imageUrls/0. Carroçaria PT: Estate→Carrinha,Saloon→Berlina,Coupe→Coupé. Cor PT: Black→Preto,White→Branco,Red→Vermelho,Blue→Azul,Grey→Cinzento,Green→Verde,Silver→Prateado.
+
+Anúncios:
+${batchText}
+
+Responde APENAS com o array JSON.`;
+
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key': getApiKey(),
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body:JSON.stringify({
+      model:'claude-sonnet-4-5',
+      max_tokens:600,
+      messages:[{role:'user',content:prompt}]
+    })
+  });
+  if(!resp.ok)throw new Error(`API ${resp.status}`);
+  const data=await resp.json();
+  const text=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+  const cleaned=text.replace(/```json|```|```javascript/g,'').trim();
+  // Try to find array first, then object wrapped in array
+  let match=cleaned.match(/\[[\s\S]*\]/);
+  if(!match){
+    // Try single object and wrap it
+    const objMatch=cleaned.match(/\{[\s\S]*\}/);
+    if(objMatch) match=['['+objMatch[0]+']'];
+  }
+  if(!match)throw new Error('JSON não encontrado');
+  try{ return JSON.parse(match[0]); }
+  catch(e){ throw new Error('JSON inválido: '+e.message); }
+}
+
+// ══════════════════════════════════════════════
+// DEDUPLICATION — merge same car from AS24 + MDE
+// ══════════════════════════════════════════════
+function deduplicateRows(rows){
+  if(!rows.length) return rows;
+  const merged = [];
+  const used = new Set();
+
+  rows.forEach((r, i) => {
+    if(used.has(i)) return;
+
+    // Try to find a duplicate from a different source
+    const dupIdx = rows.findIndex((r2, j) => {
+      if(j <= i || used.has(j)) return false;
+      if((r.fonte||'AS24') === (r2.fonte||'AS24')) return false; // same source, not a dup
+      return isSameCar(r, r2);
+    });
+
+    if(dupIdx !== -1) {
+      // Merge the two records
+      const r2 = rows[dupIdx];
+      used.add(i); used.add(dupIdx);
+      const best = r.preco <= r2.preco ? r : r2; // use cheaper listing as base
+      const other = best === r ? r2 : r;
+      merged.push({
+        ...best,
+        // Fill missing fields from other
+        co2: best.co2||other.co2,
+        cilindrada: best.cilindrada||other.cilindrada,
+        potencia: best.potencia||other.potencia,
+        cor: best.cor||other.cor,
+        emissoes: best.emissoes||other.emissoes,
+        donos: best.donos??other.donos,
+        inspecao: best.inspecao||other.inspecao,
+        filtro_particulas: best.filtro_particulas==='Sim'?'Sim':(other.filtro_particulas||best.filtro_particulas),
+        foto_url: best.foto_url||other.foto_url,
+        // Mark as merged
+        fontes: [best.fonte||'AS24', other.fonte||'MDE'],
+        url2: other.url,
+        merged: true,
+        notas: (best.notas?best.notas+' | ':'')+'Fusão AS24+MDE: mesmo anúncio detetado',
+        confidence: 'alto',
+      });
+    } else {
+      used.add(i);
+      merged.push({...r, fontes:[r.fonte||'AS24']});
+    }
+  });
+
+  // Add any remaining unused (shouldn't happen but safety)
+  rows.forEach((r,i)=>{ if(!used.has(i)) merged.push({...r, fontes:[r.fonte||'AS24']}); });
+
+  const saved = rows.length - merged.length;
+  if(saved > 0) log('Dedup',`${saved} anúncio(s) duplicado(s) fundido(s) (mesmo carro em AS24+MDE)`,'ok');
+  return merged;
+}
+
+function isSameCar(a, b){
+  // Same brand + model (fuzzy)
+  const sameMarca = normStr(a.marca) === normStr(b.marca);
+  const sameModelo = normStr(a.modelo) === normStr(b.modelo);
+  if(!sameMarca || !sameModelo) return false;
+  // Same year
+  if(a.ano && b.ano && a.ano !== b.ano) return false;
+  // Km within 2000km tolerance (same car may show slightly different)
+  if(a.km && b.km && Math.abs(a.km - b.km) > 2000) return false;
+  // Price within 5% tolerance
+  if(a.preco && b.preco){
+    const diff = Math.abs(a.preco - b.preco) / Math.max(a.preco, b.preco);
+    if(diff > 0.05) return false;
+  }
+  return true;
+}
+
+function normStr(s){ return (s||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,' ').trim(); }
+
+
+async function braveSearch(query){
+  try{
+    const url = 'https://api.search.brave.com/res/v1/web/search?q=' + encodeURIComponent(query) + '&count=3';
+    const resp = await fetch(url,{headers:{'Accept':'application/json','X-Subscription-Token':BRAVE_API_KEY}});
+    if(!resp.ok) return '';
+    const data = await resp.json();
+    return (data.web?.results||[]).slice(0,3).map(r=>(r.title||'')+': '+(r.description||'')).join(' | ');
+  }catch(e){return '';}
+}
+
+async function braveSearchWithSource(query){
+  try{
+    const url = 'https://api.search.brave.com/res/v1/web/search?q=' + encodeURIComponent(query) + '&count=5';
+    const resp = await fetch(url,{headers:{'Accept':'application/json','X-Subscription-Token':BRAVE_API_KEY}});
+    if(!resp.ok) return '';
+    const data = await resp.json();
+    return (data.web?.results||[]).slice(0,5).map(r=>{
+      const domain = r.url ? new URL(r.url).hostname.replace('www.','') : 'unknown';
+      return '['+domain+'] '+(r.title||'')+': '+(r.description||'');
+    }).join(' | ');
+  }catch(e){return '';}
+}
+
+async function fillMissingData(cars){
+  const searchResults = await Promise.all(cars.map(async r=>{
+    const isElec = (r.combustivel||'').toLowerCase().includes('elétri');
+    const base = [r.marca, r.modelo, r.submodelo||'', r.ano||''].filter(Boolean).join(' ');
+    const pot = r.potencia ? r.potencia+'cv' : '';
+    const comb = r.combustivel||'';
+    const norma = r.co2_norma||'WLTP';
+    const parts = [];
+    if(!isElec && (!r.co2||r.co2===0)){
+      // Two separate searches for cross-validation
+      const q1 = base+' '+pot+' CO2 WLTP g/km';
+      const q2 = r.marca+' '+r.modelo+' '+r.ano+' '+pot+' emissions specification';
+      const [r1, r2] = await Promise.all([braveSearchWithSource(q1), braveSearchWithSource(q2)]);
+      parts.push('CO2_A: '+r1);
+      parts.push('CO2_B: '+r2);
+    }
+    if(!isElec && (!r.cilindrada||r.cilindrada===0)){
+      const q1 = base+' '+pot+' engine size cc displacement';
+      const q2 = r.marca+' '+r.modelo+' '+r.ano+' '+pot+' technical specifications';
+      const [r1, r2] = await Promise.all([braveSearchWithSource(q1), braveSearchWithSource(q2)]);
+      parts.push('CIL_A: '+r1);
+      parts.push('CIL_B: '+r2);
+    }
+    return 'CAR: '+base+' ('+comb+' '+pot+' '+norma+')\n'+parts.join('\n');
+  }));
+
+  const context = searchResults.join('\n\n');
+  const prompt = 'Especialista em especificações técnicas de automóveis. '
+    + 'Extrai CO2 WLTP (g/km ciclo combinado) e cilindrada (cc) dos resultados. '
+    + 'RIGOR OBRIGATÓRIO: '
+    + '1) Usa SEMPRE WLTP (nunca NEDC). '
+    + '2) Se as duas pesquisas dão valores diferentes, usa o da fonte mais oficial (fabricante>imprensa especializada>outros). '
+    + '3) Se incerto, prefere valor mais alto de CO2 (mais seguro para cálculo ISV). '
+    + '4) Usa potência e combustível para confirmar que é a variante certa. '
+    + 'Array JSON MESMA ORDEM: [{"co2":237,"cilindrada":2993,"fonte_co2":"bmw.com","fonte_cil":"bmw.com","confianca":"alta"}]. '
+    + 'confianca: alta=fabricante oficial, media=revista/auto-portal, baixa=outro. '
+    + 'Se sem dados fiáveis usa 0. SEM texto extra. Começa [ termina ].\n\n'
+    + context;
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':getApiKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:300,messages:[{role:'user',content:prompt}]})
+  });
+  if(!resp.ok) throw new Error('API '+resp.status);
+  const data = await resp.json();
+  const text = data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+  const cleanedF = text.replace(/```json|```/g,'').trim();
+  let matchF = cleanedF.match(/\[[\s\S]*\]/);
+  if(!matchF){ const o=cleanedF.match(/\{[\s\S]*\}/); if(o) matchF=['['+o[0]+']']; }
+  if(!matchF) throw new Error('JSON nao encontrado');
+  try{
+    return JSON.parse(matchF[0]).map((f,i)=>({...f, url:cars[i]?cars[i].url:''}));
+  }catch(e){ throw new Error('JSON fill inválido'); }
+}
+// ══════════════════════════════════════════════
+// SV REVIEW — selecção manual de anúncios SV
+// ══════════════════════════════════════════════
+let svSelectedRows = [];
+
+function reviewSV(){
+  if(!files.sv) return;
+  const panel = document.getElementById('sv-review-panel');
+  if(!panel) return;
+  panel.classList.remove('hidden');
+  buildSVReviewList('sv-review-list','sv-selected-count','sv-chk');
+}
+
+function updateSVCount(){
+  updateSVModalCount('sv-selected-count');
+  const btn = document.getElementById('btn-sv-confirm');
+  if(btn) btn.disabled = svSelectedRows.length===0;
+}
+
+function buildSVReviewList(containerId, countId, checkboxPrefix){
+  const rows = files.sv?.rows || [];
+  const container = document.getElementById(containerId);
+  const countEl = document.getElementById(countId);
+  if(!container) return;
+  container.innerHTML = '';
+  rows.forEach((r,i)=>{
+    const nome = (r.make||r.brand||r.manufacturer||'') + ' ' + (r.model||'');
+    const sub = r.version||r.variant||r.trim||r.title||'';
+    const ano = r.year||r.firstRegistration||'';
+    const kmRaw = parseInt((r.mileage||r.km||'0').toString().replace(/[^0-9]/g,''))||0;
+    const comb = r.fuel||r.fuelType||'';
+    const preco = parseFloat(r.price||r.preco||0);
+    const isSelected = svSelectedRows.includes(i);
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--border2);border-radius:var(--r);background:var(--surface);transition:background .15s;';
+    div.innerHTML = `
+      <input type="checkbox" id="${checkboxPrefix}-${i}" ${isSelected?'checked':''} onchange="svToggleModal(${i},this.checked,'${checkboxPrefix}')" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);">
+      <label for="${checkboxPrefix}-${i}" style="flex:1;min-width:0;cursor:pointer;">
+        <div style="font-family:var(--syne);font-size:13px;font-weight:600;">${nome}</div>
+        <div style="font-size:11px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${sub}</div>
+      </label>
+      <div style="display:flex;gap:14px;flex-shrink:0;font-size:12px;text-align:right;">
+        <span style="color:var(--ink3);">${ano}</span>
+        <span style="color:var(--ink3);">${kmRaw.toLocaleString('pt-PT')} km</span>
+        <span style="color:var(--ink3);">${comb}</span>
+        <span style="font-family:var(--syne);font-weight:700;color:var(--accent);min-width:70px;">${preco>0?preco.toLocaleString('pt-PT')+'€':'—'}</span>
+      </div>`;
+    container.appendChild(div);
+  });
+  updateSVModalCount(countId);
+}
+
+function svToggleModal(i, checked, prefix){
+  if(checked){ if(!svSelectedRows.includes(i)) svSelectedRows.push(i); }
+  else { svSelectedRows = svSelectedRows.filter(x=>x!==i); }
+  // Sync both lists if both visible
+  ['sv-chk','sv-modal-chk'].forEach(p=>{
+    const cb = document.getElementById(p+'-'+i);
+    if(cb) cb.checked = checked;
+  });
+  updateSVCount();
+  updateSVModalCount('sv-modal-count');
+}
+
+function svSelectAll(val){
+  if(!files.sv) return;
+  svSelectedRows = val ? files.sv.rows.map((_,i)=>i) : [];
+  document.querySelectorAll('[id^="sv-chk-"],[id^="sv-modal-chk-"]').forEach(cb=>cb.checked=val);
+  updateSVCount();
+  updateSVModalCount('sv-modal-count');
+}
+
+function updateSVModalCount(countId){
+  const el = document.getElementById(countId);
+  const total = files.sv?.rows.length||0;
+  const sel = svSelectedRows.length;
+  if(el) el.textContent = sel+' de '+total+' anúncios seleccionados';
+}
+
+function abrirReverMercado(){
+  if(!files.sv?.rows.length){
+    // No SV data - offer to upload new SV file
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const parsed = parseCSV(ev.target.result);
+        files.sv = {rows: parsed.rows, name: file.name};
+        svSelectedRows = parsed.rows.map((_,i)=>i);
+        buildSVReviewList('sv-modal-list','sv-modal-count','sv-modal-chk');
+        document.getElementById('sv-modal-overlay').classList.remove('hidden');
+      };
+      reader.readAsText(file, 'UTF-8');
+    };
+    input.click();
+    return;
+  }
+  buildSVReviewList('sv-modal-list','sv-modal-count','sv-modal-chk');
+  document.getElementById('sv-modal-overlay').classList.remove('hidden');
+}
+
+function closeSVModal(e){
+  if(!e || e.target===document.getElementById('sv-modal-overlay'))
+    document.getElementById('sv-modal-overlay').classList.add('hidden');
+}
+
+async function confirmarReverMercado(){
+  closeSVModal();
+  // Recalculate market with new selection
+  const selectedSVRows = svSelectedRows.map(i=>files.sv.rows[i]).filter(Boolean);
+  svMarket = selectedSVRows.length ? await analyzeSVMarket(selectedSVRows) : {count:0,preco_min:0,preco_medio:0,preco_max:0,km_medio:0,market_score:5,saturacao:'Sem dados',summary:'Sem dados SV'};
+  // Clear cached svRef so all cars pick up new svMarket.preco_medio
+  const newSvRef = svMarket.preco_medio || 0;
+  calcRows = calcRows.map(r=>({...r, svRef: newSvRef, ...calcMarg({...r, svRef: newSvRef})}));
+  eliminatedRows = eliminatedRows.map(r=>({...r, svRef: newSvRef, ...calcMarg({...r, svRef: newSvRef})}));
+  renderMarketHeader();
+  renderResults();
+}
+
+async function analyzeSVMarket(rows){
+  // Use only selected rows from SV review
+  if(svSelectedRows.length>0 && svSelectedRows.length<rows.length){
+    rows = svSelectedRows.map(i=>rows[i]).filter(Boolean);
+  }
+  const prices=rows.map(r=>parseFloat(r.price||r.preco||0)).filter(p=>p>0);
+  const kms=rows.map(r=>parseInt((r.mileage||r.mileage||'0').replace(/[^\d]/g,''))).filter(k=>k>0);
+  const min=Math.min(...prices), max=Math.max(...prices);
+  const med=Math.round(prices.reduce((a,b)=>a+b,0)/prices.length);
+  const kmMed=kms.length?Math.round(kms.reduce((a,b)=>a+b,0)/kms.length):0;
+  const count=rows.length;
+
+  // Score de mercado (0-10): muitos anúncios = saturado (score baixo), poucos = oportunidade (score alto)
+  const sat=count>20?'Mercado saturado':count>10?'Oferta moderada':count>5?'Boa liquidez':'Mercado escasso';
+  const mScore=count>20?3:count>10?5:count>5?7:9;
+
+  // Spread de preços
+  const spread=max-min;
+  const spreaPct=med>0?Math.round(spread/med*100):0;
+
+  return{
+    count, preco_min:min, preco_medio:med, preco_max:max,
+    km_medio:kmMed, market_score:mScore, saturacao:sat,
+    spread, spread_pct:spreaPct,
+    summary:`${count} anúncios ativos em Portugal · Preço médio ${fmt(med)}€ · ${sat}`
+  };
+}
+
+function computeSVFallback(rows){
+  const prices=rows.map(r=>parseFloat(r.price||r.preco||0)).filter(p=>p>0);
+  if(!prices.length)return{count:0,preco_min:0,preco_medio:0,preco_max:0,km_medio:0,market_score:5,saturacao:'Sem dados',summary:'Sem dados SV'};
+  const min=Math.min(...prices),max=Math.max(...prices),med=Math.round(prices.reduce((a,b)=>a+b,0)/prices.length);
+  return{count:rows.length,preco_min:min,preco_medio:med,preco_max:max,km_medio:0,market_score:5,saturacao:'Calculado',summary:`${rows.length} anúncios · med ${fmt(med)}€`};
+}
+
+function extractFields(row,src){
+  const k=src==='mde'?[
+    'manufacturer','model','shortTitle','subTitle','title',
+    'properties/firstRegistration','properties/productionDate',
+    'properties/milage',
+    'properties/co2Emission','attributes/CO₂ emissions (comb.)',
+    'properties/engineSize','properties/fuelType',
+    'properties/power','attributes/Power',
+    'properties/gearbox','properties/colour',
+    'attributes/Category','properties/bodyType',
+    'properties/emissionClass','attributes/Emission Class',
+    'properties/seats','properties/numberOfOwners',
+    'properties/generalInspection','properties/lastService',
+    'properties/driveType','attributes/Drive type',
+    'properties/otherEnergySources','attributes/Other energy source',
+    'attributes/Electric range','attributes/Battery capacity (in kWh)',
+    'dealer/contry','dealer/name','dealer/sellerType',
+    'price/amount','netPrice/amount','price/vat',
+    'createdTime','url','images/0','imageUrls/0',
+    'isDamaged'
+  ]:[
+    // AS24
+    'manufacturer','model','modelVersion','firstRegistration',
+    'milage','rawPrice',
+    'fuelType','drivetrain',  // drivetrain ajuda a distinguir tipo
+    'co2Emission','engineSize','power',
+    'gearbox','bodyType','colour','emissionClass',
+    'seats','numberOfPreviousOwners','isPriceDeductable',
+    'generalInspection','lastService',
+    'dealer/address/contry','dealer/dealerName','dealer/sellerType',
+    'url','images/0','imageUrls/0'
+  ];
+  const r={};
+  k.forEach(key=>{
+    if(row[key]!==undefined&&String(row[key]).trim()!==''&&row[key]!=='N/A'&&row[key]!=='nan')
+      r[key]=row[key];
+  });
+  return r;
+}
+
+function normFuelFallback(row){
+  // AS24
+  const ft = String(row.fuelType||'').toLowerCase();
+  const dt = String(row.drivetrain||'').toLowerCase();
+  // Mobile.de
+  const drive = String(row['properties/driveType']||row['attributes/Drive type']||'').toLowerCase();
+  const other = String(row['properties/otherEnergySources']||row['attributes/Other energy source']||'').toLowerCase();
+  const pfuel = String(row['properties/fuelType']||'').toLowerCase();
+
+  // Elétrico
+  if(drive.includes('electric')||other.includes('electricity')||ft==='electric'||pfuel==='electric') return 'Elétrico';
+  // PHEV
+  if(ft.includes('electric/gasoline')||ft.includes('plugin')||ft.includes('plug-in')||
+     drive.includes('plug')||pfuel.includes('plugin')||pfuel.includes('hybrid')) return 'PHEV';
+  // Mild Hybrid
+  if(ft.includes('mild')||pfuel.includes('mild')) return 'Híbrido Mild';
+  // Gasóleo
+  if(ft.includes('diesel')||pfuel.includes('diesel')) return 'Gasóleo';
+  // Default
+  return 'Gasolina';
+}
+
+function normCO2Fallback(row){
+  const c = String(row.co2Emission||row['properties/co2Emission']||row['attributes/CO₂ emissions (comb.)']||'0');
+  const m = c.match(/(\d+)/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function normCilFallback(row){
+  const c = String(row.engineSize||row['properties/engineSize']||'0');
+  return parseInt(c.replace(/[^\d]/g,''))||0;
+}
+
+function normPotFallback(row){
+  // "350 kW (476 hp)" or "118 kW (160 hp)" → extract hp, convert to cv
+  const p = String(row.power||row['properties/power']||row['attributes/Power']||'0');
+  const hp = p.match(/\((\d+)\s*hp\)/i);
+  if(hp) return Math.round(parseInt(hp[1])*1.0138); // hp → cv
+  const kw = p.match(/(\d+)\s*kW/i);
+  if(kw) return Math.round(parseInt(kw[1])*1.36);
+  return parseInt(p.replace(/[^\d]/g,''))||0;
+}
+
+function normAnoFallback(row){
+  const reg = String(row.firstRegistration||row['properties/firstRegistration']||row['properties/productionDate']||'');
+  const m = reg.match(/(\d{4})/);
+  return m ? parseInt(m[1]) : 2020;
+}
+
+function normKmFallback(row){
+  const km = String(row.milage||row['properties/milage']||row.mileage||'0');
+  return parseInt(km.replace(/[^\d]/g,''))||0;
+}
+
+function normPaisFallback(row){
+  const p = row['dealer/address/contry']||row['dealer/contry']||'';
+  const map={'DE':'Alemanha','BE':'Bélgica','NL':'Holanda','IT':'Itália','FR':'França','ES':'Espanha','AT':'Áustria','PT':'Portugal','CH':'Suíça','GB':'Reino Unido','PL':'Polónia','CZ':'República Checa','DK':'Dinamarca','SE':'Suécia','NO':'Noruega','FI':'Finlândia','HU':'Hungria','RO':'Roménia','LU':'Luxemburgo','IE':'Irlanda'};
+  return map[p]||p||'Alemanha';
+}
+
+function fallback(row){
+  const src=row._src||'as24';
+  const comb = normFuelFallback(row);
+  const co2 = normCO2Fallback(row);
+  const cil = comb==='Elétrico'?0:normCilFallback(row);
+  const pot = normPotFallback(row);
+  const ano = normAnoFallback(row);
+  const km = normKmFallback(row);
+  const pais = normPaisFallback(row);
+  const preco = parseFloat(row.rawPrice||row['price/amount']||'0')||0;
+  const hasNet = row['netPrice/amount']&&String(row['netPrice/amount'])!=='N/A'&&String(row['netPrice/amount'])!=='nan';
+  return{
+    marca:(row.manufacturer||row.make||'').trim(),
+    modelo:(row.model||'').trim(),
+    submodelo:(row.modelVersion||row.subTitle||'').trim(),
+    ano, km, combustivel:comb,
+    co2, co2_inferred:false,
+    co2_norma: ano>=2020?'WLTP':'NEDC',
+    cilindrada:cil, cil_inferred:false,
+    potencia:pot,
+    caixa:String(row.gearbox||row['properties/gearbox']||'').includes('Auto')?'Automática':'Manual',
+    cor:(row.colour||row['properties/colour']||'').trim(),
+    carrocaria:(row.bodyType||row['attributes/Category']||'').trim(),
+    emissoes:(row.emissionClass||row['properties/emissionClass']||'').trim(),
+    lugares:parseInt(row.seats||row['properties/seats']||'5')||5,
+    iva_dedutivel:row.isPriceDeductable==='True'||hasNet?'Sim':'Desconhecido',
+    pais, regiao:'',
+    dealer:(row['dealer/dealerName']||row['dealer/name']||'').trim(),
+    donos:parseFloat(row.numberOfPreviousOwners||row['properties/numberOfOwners'])||null,
+    inspecao:(row.generalInspection||row['properties/generalInspection']||null),
+    ultimo_servico:(row.lastService||row['properties/lastService']||null),
+    tipo_vendedor:'Profissional',
+    preco, data:'',
+    url:(row.url||'').trim(),
+    filtro_particulas:'Desconhecido',
+    foto_url:row['images/0']||row['imageUrls/0']||null,
+    fonte:src.toUpperCase(),
+    confidence:'médio',
+    notas:'Fallback — dados extraídos diretamente do CSV',
+    is_fallback: true
+  };
+}
+
+// ══════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════
+function renderMarketHeader(){
+  const m=svMarket;
+  const sc=m.market_score;
+  const scColor=sc>=7?'var(--green)':sc>=4?'var(--amber)':'var(--accent)';
+  const scBg=sc>=7?'var(--green-l)':sc>=4?'var(--amber-l)':'var(--accent-l)';
+  document.getElementById('market-hdr').innerHTML=`
+    <div class="market-gauge">
+      <div style="width:80px;height:80px;border-radius:50%;border:4px solid ${scColor};background:${scBg};display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="font-family:var(--syne);font-size:26px;font-weight:800;color:${scColor};line-height:1;">${sc}</div>
+        <div style="font-size:9px;color:${scColor};text-transform:uppercase;letter-spacing:.05em;">/10</div>
+      </div>
+      <div style="font-size:10px;color:var(--ink3);text-align:center;margin-top:5px;">Mercado PT</div>
+    </div>
+    <div class="market-info">
+      <div class="market-title">Análise de Mercado — Portugal</div>
+      <div class="market-sub">${m.summary}</div>
+      <div class="market-stats">
+        <div class="mstat"><div class="mstat-val">${m.count}</div><div class="mstat-label">Anúncios ativos</div></div>
+        <div class="mstat"><div class="mstat-val" style="color:var(--green);">${fmt(m.preco_min)}€</div><div class="mstat-label">Preço mínimo</div></div>
+        <div class="mstat"><div class="mstat-val">${fmt(m.preco_medio)}€</div><div class="mstat-label">Preço médio</div></div>
+        <div class="mstat"><div class="mstat-val" style="color:var(--accent);">${fmt(m.preco_max)}€</div><div class="mstat-label">Preço máximo</div></div>
+        <div class="mstat"><div class="mstat-val">${fmt(m.km_medio)} km</div><div class="mstat-label">Km médios</div></div>
+        <div class="mstat"><div class="mstat-val">${m.spread_pct||0}%</div><div class="mstat-label">Spread preços</div></div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:flex-start;padding:0 4px;">
+      <button onclick="abrirReverMercado()" style="border:1px solid var(--border);background:var(--surface);color:var(--ink2);padding:7px 12px;border-radius:var(--r);cursor:pointer;font-size:11px;font-family:var(--mono);white-space:nowrap;" onmouseover="this.style.borderColor='var(--ink2)'" onmouseout="this.style.borderColor='var(--border)'">📊 Rever Mercado PT</button>
+    </div>
+    <div style="background:var(--surface2);border-radius:var(--r);padding:12px 16px;font-size:11px;max-width:200px;">
+      <div style="font-weight:600;margin-bottom:6px;">Preço de Venda Ref.</div>
+      <div>Min: <strong>${fmt(m.preco_min)}€</strong></div>
+      <div>Médio: <strong style="color:var(--accent);">${fmt(m.preco_medio)}€</strong></div>
+      <div>Max: <strong>${fmt(m.preco_max)}€</strong></div>
+      <div style="margin-top:6px;font-size:10px;color:var(--ink3);">Calculadora usa o preço médio como referência</div>
+    </div>`;
+}
+
+function renderResults(){
+  const sorted=sortResults([...calcRows]);
+  document.getElementById('res-count').textContent=sorted.length;
+  const grid=document.getElementById('car-grid');
+  grid.innerHTML='';
+  sorted.forEach((r,i)=>grid.appendChild(buildCarCard(r,i)));
+  renderEliminados();
+}
+
+function sortResults(rows){
+  const s=document.getElementById('sort-select')?.value||'score';
+  return rows.sort((a,b)=>{
+    if(s==='score')return(b.score||0)-(a.score||0);
+    if(s==='marg_liq')return(b.ml||0)-(a.ml||0);
+    if(s==='marg_bruta')return(b.mb||0)-(a.mb||0);
+    if(s==='preco')return(a.preco||0)-(b.preco||0);
+    if(s==='isv')return(a.isv||0)-(b.isv||0);
+    return 0;
+  });
+}
+
+function buildCarCard(r,i){
+  const isFav=favs.some(f=>f.url===r.url);
+  const sc=r.score;
+  const scCls=sc==null?'s-none':sc>=30?'':'s-mid s-low'.split(' ')[sc>=15?0:1];
+  const scColor=sc==null?'var(--ink3)':sc>=30?'var(--green)':sc>=15?'var(--amber)':'var(--accent)';
+  const fc=r.combustivel==='Elétrico'?'t-elec':r.combustivel==='PHEV'?'t-phev':r.combustivel==='Gasóleo'?'t-diesel':r.combustivel==='Híbrido Mild'?'t-mild':'t-gas';
+  const div=document.createElement('div');
+  div.className='car-card';
+  // Source badges
+  const srcs = r.fontes || [r.fonte||'AS24'];
+  const srcBadges = srcs.map(s=>`<span class="src-badge-pill ${s==='AS24'?'src-as24':s==='MDE'?'src-mde':'src-merged'}">${s}</span>`).join('');
+  div.innerHTML=`
+    <button class="fav-btn ${isFav?'active':''}" onclick="toggleFav(event,${i})" title="${isFav?'Remover dos favoritos':'Guardar como favorito'}" style="left:auto;right:8px;">${isFav?'♥':'♡'}</button>
+    <button onclick="eliminarCarro(event,${i})" title="Eliminar anúncio" style="position:absolute;top:8px;left:8px;width:28px;height:28px;border-radius:50%;background:rgba(200,64,26,0.85);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;z-index:10;line-height:1;">✕</button>
+    <div class="car-card-img">
+      ${r.foto_url?`<img src="${r.foto_url}" onerror="this.parentNode.innerHTML='🚗'" loading="lazy">`:'🚗'}
+    </div>
+    <div class="car-card-body">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="display:flex;gap:4px;">${srcBadges}</div>
+        ${r.score!=null?`<span style="font-family:var(--syne);font-size:13px;font-weight:800;color:${scColor};">${r.score}</span>`:''}
+      </div>
+      <div class="car-card-title">${r.marca} ${r.modelo}</div>
+      <div class="car-card-sub">${r.submodelo||''}</div>
+      <div class="car-card-meta">
+        <span class="meta-pill">${r.ano||'—'}</span>
+        <span class="meta-pill">${fmt(r.km||0)} km</span>
+        <span class="tag ${fc}">${r.combustivel}</span>
+        <span class="meta-pill">${r.pais||'—'}</span>
+      </div>
+      <div class="car-card-costs">
+        <div class="cc-item"><div class="cc-label">Compra</div><div class="cc-val">${fmt(r.preco||0)}€</div></div>
+        <div class="cc-item"><div class="cc-label">ISV</div><div class="cc-val">${fmt(r.isv||0)}€</div></div>
+        <div class="cc-item"><div class="cc-label">Custo Total PT</div><div class="cc-val" style="color:var(--accent);">${fmt(r.custo||0)}€</div></div>
+        <div class="cc-item"><div class="cc-label">Margem Líq.</div><div class="cc-val" style="color:${r.ml!=null&&r.ml>=0?'var(--green)':'var(--accent)'};">${r.ml!=null?fmt(r.ml)+'€':'—'}</div></div>
+      </div>
+    </div>`;
+  div.addEventListener('click', (e)=>{
+    if(e.target.closest('.fav-btn')) return; // don't open modal when clicking fav
+    openCarModal(r);
+  });
+  return div;
+}
+
+function applyNormaOverride(norma){
+  // Apply norma to all cars in processedOrigin that don't have a confirmed WLTP value
+  processedOrigin = processedOrigin.map(r=>{
+    // Only override if year suggests different norma or norma was inferred
+    return {...r, co2_norma: norma};
+  });
+  // Also update calcRows and eliminatedRows
+  calcRows = calcRows.map(r=>({...r, co2_norma: norma}));
+  eliminatedRows = eliminatedRows.map(r=>({...r, co2_norma: norma}));
+  recalcResults();
+  // Update modal if open
+  const modalNormaEl = document.querySelector('#modal-detail-grid select[data-field="co2_norma"]');
+  if(modalNormaEl) modalNormaEl.value = norma;
+}
+
+function recalcResults(){
+  const norma = document.getElementById('ov-norma')?.value || 'WLTP';
+  const svRefMap = {};
+  calcRows.forEach(r=>{ if(r.url && r.svRef) svRefMap[r.url]=r.svRef; });
+  // Apply norma override to each car that doesn't have a specific norma set
+  calcRows = processedOrigin.map(r=>{
+    // Use car's own norma if specifically set by IA, else use the override
+    const carNorma = r.co2_norma_override || norma;
+    const rWithNorma = {...r, co2_norma: carNorma, svRef: svRefMap[r.url] || r.svRef || svMarket.preco_medio || 0};
+    return {...rWithNorma, ...calcMarg(rWithNorma)};
+  });
+  renderResults();
+}
+
+// ══════════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════════
+function openCarModal(r){
+  const isFav=favs.some(f=>f.url===r.url);
+  const fc=r.combustivel==='Elétrico'?'t-elec':r.combustivel==='PHEV'?'t-phev':r.combustivel==='Gasóleo'?'t-diesel':r.combustivel==='Híbrido Mild'?'t-mild':'t-gas';
+  const scColor=r.score>=30?'var(--green)':r.score>=15?'var(--amber)':'var(--accent)';
+  document.getElementById('modal-content').innerHTML=`
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-title">${r.marca} ${r.modelo}</div>
+        <div style="font-size:11px;color:var(--ink3);">${r.submodelo||''}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        ${r.score!=null?`<span class="score" style="background:${scColor};color:#fff;">${r.score}</span>`:''}
+        <button onclick="toggleFavModal()" id="modal-fav" style="border:1px solid var(--border);background:${isFav?'var(--accent-l)':'transparent'};color:${isFav?'var(--accent)':'var(--ink3)'};padding:6px 12px;border-radius:var(--r);cursor:pointer;font-size:13px;">${isFav?'♥ Favorito':'♡ Guardar'}</button>
+        ${r.url?`<a href="${r.url}" target="_blank" class="btn btn-primary btn-sm">↗ ${r.fonte||'AS24'}</a>`:''}
+        ${r.url2?`<a href="${r.url2}" target="_blank" class="btn btn-ghost btn-sm">↗ ${(r.fontes||[])[1]||'MDE'}</a>`:''}
+        <button onclick="closeModal()" style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--ink3);padding:4px;">✕</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      ${r.foto_url?`<img src="${r.foto_url}" class="modal-img" onerror="this.outerHTML='<div class=modal-img style=font-size:48px>🚗</div>'">`:'<div class="modal-img" style="font-size:48px;">🚗</div>'}
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:12px;">📍 ${r.dealer||'—'} · ${r.pais||'—'} ${r.regiao?'· '+r.regiao:''}</div>
+      <div class="cost-strip">
+        <div class="cs-item"><div class="cs-val">${fmt(r.preco||0)}€</div><div class="cs-label">Compra</div></div>
+        <div class="cs-item"><div class="cs-val">${fmt(r.transp||0)}€</div><div class="cs-label">Transporte</div></div>
+        <div class="cs-item"><div class="cs-val">${fmt(r.isv||0)}€</div><div class="cs-label">ISV</div></div>
+        <div class="cs-item"><div class="cs-val">${fmt(r.legal||0)}€</div><div class="cs-label">Legalização</div></div>
+        <div class="cs-item" style="background:var(--accent-l);"><div class="cs-val" style="color:var(--accent);">${fmt(r.custo||0)}€</div><div class="cs-label">Custo Total PT</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;padding:12px;background:${r.ml>=0?'var(--green-l)':'var(--accent-l)'};border-radius:var(--r);">
+        <div class="cs-item" style="background:transparent;"><div class="cs-val">${r.mb!=null?fmt(r.mb)+'€':'—'}</div><div class="cs-label">Margem Bruta</div></div>
+        <div class="cs-item" style="background:transparent;"><div class="cs-val" style="color:var(--amber);">${r.ivaM!=null?fmt(r.ivaM)+'€':'—'}</div><div class="cs-label">IVA Margem (23%)</div></div>
+        <div class="cs-item" style="background:transparent;"><div class="cs-val" style="color:${r.ml>=0?'var(--green)':'var(--accent)'};">${r.ml!=null?fmt(r.ml)+'€':'—'}</div><div class="cs-label">Margem Líquida</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:8px;">✏️ Clica em qualquer campo para editar — o ISV e margens recalculam automaticamente</div>
+      <div class="detail-grid" id="modal-detail-grid">
+        ${detailField('Ano', 'ano', r.ano||'', false, r)}
+        ${detailField('Quilómetros', 'km', r.km||0, false, r, 'km')}
+        ${detailField('Combustível', 'combustivel', r.combustivel, false, r, '', ['Gasolina','Gasóleo','Elétrico','PHEV','Híbrido Mild'])}
+        ${detailField('Norma CO2', 'co2_norma', r.co2_norma||'WLTP', false, r, '', ['WLTP','NEDC'])}
+        ${detailField('CO2 WLTP (g/km)', 'co2', r.co2||0, r.co2_inferred, r, 'g/km')}
+        ${detailField('Cilindrada (cc)', 'cilindrada', r.cilindrada||0, r.cil_inferred, r, 'cc')}
+        ${detailField('Potência (cv)', 'potencia', r.potencia||0, false, r, 'cv')}
+        ${detailField('Caixa', 'caixa', r.caixa||'—', false, r, '', ['Automática','Manual','Semi-automática'])}
+        ${detailField('Cor', 'cor', r.cor||'—', false, r)}
+        ${detailField('Carroçaria', 'carrocaria', r.carrocaria||'—', false, r, '', ['SUV','Berlina','Carrinha','Coupé','Cabrio','Monovolume','Pickup'])}
+        ${detailField('Lugares', 'lugares', r.lugares||5, false, r)}
+        ${detailField('IVA Dedutível', 'iva_dedutivel', r.iva_dedutivel||'—', false, r, '', ['Sim','Não','Desconhecido'])}
+        ${detailField('Nº Donos', 'donos', r.donos!=null?r.donos:'—', false, r)}
+        ${detailField('Inspeção', 'inspecao', r.inspecao||'—', false, r)}
+        ${detailField('Último Serviço', 'ultimo_servico', r.ultimo_servico||'—', false, r)}
+        ${detailField('Classe Emissões', 'emissoes', r.emissoes||'—', false, r)}
+        ${detailField('Filtro DPF/FAP', 'filtro_particulas', r.filtro_particulas||'—', false, r, '', ['Sim','Não','Desconhecido'])}
+      </div>
+      ${r.notas?`<div class="alert alert-warn" style="margin-top:8px;">📋 ${r.notas}</div>`:''}
+    </div>`;
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.getElementById('modal-overlay')._car=r;
+}
+
+function closeModal(e){
+  if(!e||e.target===document.getElementById('modal-overlay'))
+    document.getElementById('modal-overlay').classList.add('hidden');
+}
+
+// ── EDITABLE DETAIL FIELDS ────────────────────────────────────────────
+function detailField(label, field, value, iaInferred, r, unit='', options=[]){
+  const isMissing = (field==='co2'&&r.co2_missing) || (field==='cilindrada'&&r.cil_missing);
+  // Determine confidence color for IA badge
+  const confColor = r && field==='co2' && r.co2_confianca==='alta' ? '#1A6B3C'
+    : r && field==='co2' && r.co2_confianca==='baixa' ? '#B5620A' : 'var(--blue)';
+  const fonteText = field==='co2'&&r&&r.co2_fonte ? r.co2_fonte
+    : field==='cilindrada'&&r&&r.cil_fonte ? r.cil_fonte : '';
+  const iaBadge = iaInferred
+    ? `<span title="Preenchido pela IA${fonteText?' · fonte: '+fonteText:''}" style="position:absolute;bottom:4px;right:6px;font-size:8px;font-weight:700;color:${confColor};opacity:0.85;letter-spacing:.04em;cursor:help;">IA${fonteText?' ·'+fonteText.split('.')[0]:''}</span>`
+    : isMissing
+    ? `<span style="position:absolute;bottom:4px;right:6px;font-size:8px;font-weight:700;color:var(--accent);opacity:0.9;">⚠️</span>`
+    : '';
+  const bg = iaInferred ? 'background:var(--blue-l);' : isMissing ? 'background:var(--accent-l);' : '';
+  const displayVal = value===null||value===undefined||value===''?'—':value;
+  const unitSpan = unit ? ` <span style="font-size:10px;color:var(--ink3);">${unit}</span>` : '';
+
+  if(options.length){
+    const opts = options.map(o=>`<option value="${o}" ${o===value?'selected':''}>${o}</option>`).join('');
+    return `<div class="detail-item" style="position:relative;${bg}cursor:pointer;">
+      <div class="detail-label">${label}</div>
+      <select onchange="updateModalField('${field}',this.value,event)" style="border:none;background:transparent;font-family:var(--mono);font-size:13px;font-weight:500;cursor:pointer;width:100%;color:var(--ink);outline:none;">${opts}</select>
+      ${iaBadge}
+    </div>`;
+  }
+
+  return `<div class="detail-item" style="position:relative;${bg}cursor:text;" onclick="startEditField(this,'${field}','${value}','${unit}',event)">
+    <div class="detail-label">${label}</div>
+    <div class="detail-val" id="dfield-${field}">${displayVal}${unitSpan}</div>
+    ${iaBadge}
+  </div>`;
+}
+
+function startEditField(el, field, currentVal, unit, e){
+  e.stopPropagation();
+  if(el.querySelector('input')) return;
+  const valDiv = el.querySelector('.detail-val');
+  const input = document.createElement('input');
+  input.value = currentVal;
+  input.style.cssText = 'width:100%;border:none;border-bottom:2px solid var(--accent);background:transparent;font-family:var(--mono);font-size:13px;font-weight:500;outline:none;color:var(--ink);padding:2px 0;';
+  valDiv.innerHTML = '';
+  valDiv.appendChild(input);
+  input.focus(); input.select();
+
+  const save = () => {
+    const newVal = input.value.trim();
+    updateModalField(field, newVal, null);
+  };
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', e2 => {
+    if(e2.key==='Enter') { e2.preventDefault(); save(); }
+    if(e2.key==='Escape') { openCarModal(document.getElementById('modal-overlay')._car); }
+  });
+}
+
+function updateModalField(field, newVal, e){
+  if(e) e.stopPropagation();
+  const r = document.getElementById('modal-overlay')._car;
+  if(!r) return;
+
+  // Parse numeric fields
+  const numFields = ['co2','cilindrada','potencia','ano','km','lugares','donos'];
+  const parsed = numFields.includes(field) ? (parseInt(String(newVal).replace(/[^\d]/g,''))||0) : newVal;
+  r[field] = parsed;
+  // Clear inferred/missing flags when user edits the field
+  if(field==='co2') { r.co2_inferred = false; r.co2_missing = false; }
+  if(field==='cilindrada') { r.cil_inferred = false; r.cil_missing = false; }
+
+  // Recalculate margins for this car
+  const newMargins = calcMarg(r);
+  Object.assign(r, newMargins);
+
+  // Update in calcRows
+  const idx = calcRows.findIndex(c => c.url === r.url);
+  if(idx !== -1){
+    calcRows[idx] = {...r};
+  }
+  // Also update in processedOrigin
+  const pidx = processedOrigin.findIndex(c => c.url === r.url);
+  if(pidx !== -1){
+    processedOrigin[pidx] = {...r};
+  }
+
+  // Refresh modal cost strip and margins
+  refreshModalCosts(r);
+
+  // Re-render results list (updates score and position)
+  renderResults();
+}
+
+function refreshModalCosts(r){
+  // Update cost strip in modal
+  const strip = document.querySelector('.cost-strip');
+  if(strip){
+    const strips = strip.querySelectorAll('.cs-val');
+    if(strips[0]) strips[0].textContent = fmt(r.preco||0)+'€';
+    if(strips[1]) strips[1].textContent = fmt(r.transp||0)+'€';
+    if(strips[2]) strips[2].textContent = fmt(r.isv||0)+'€';
+    if(strips[3]) strips[3].textContent = fmt(r.legal||0)+'€';
+    if(strips[4]) strips[4].textContent = fmt(r.custo||0)+'€';
+  }
+  // Update margins section
+  const margVals = document.querySelectorAll('.cs-item .cs-val');
+  // Find by label
+  document.querySelectorAll('.modal-body .cs-item').forEach(item => {
+    const label = item.querySelector('.cs-label')?.textContent || '';
+    const val = item.querySelector('.cs-val');
+    if(!val) return;
+    if(label.includes('Margem Bruta')) val.textContent = r.mb!=null?fmt(r.mb)+'€':'—';
+    if(label.includes('IVA')) val.textContent = r.ivaM!=null?fmt(r.ivaM)+'€':'—';
+    if(label.includes('Líquida')) { val.textContent = r.ml!=null?fmt(r.ml)+'€':'—'; val.style.color=r.ml>=0?'var(--green)':'var(--accent)'; }
+  });
+  // Update score badge
+  const scoreBadge = document.querySelector('.modal-hdr .score');
+  if(scoreBadge && r.score!=null){
+    const sc = r.score;
+    scoreBadge.textContent = sc;
+    scoreBadge.style.background = sc>=30?'var(--green)':sc>=15?'var(--amber)':'var(--accent)';
+  }
+}
+
+function toggleFavModal(){
+  const r=document.getElementById('modal-overlay')._car;
+  if(r)toggleFavDirect(r);
+  const isFav=favs.some(f=>f.url===r.url);
+  const btn=document.getElementById('modal-fav');
+  if(btn){btn.textContent=isFav?'♥ Favorito':'♡ Guardar';btn.style.background=isFav?'var(--accent-l)':'transparent';btn.style.color=isFav?'var(--accent)':'var(--ink3)';}
+}
+
+// ══════════════════════════════════════════════
+// FAVORITES
+// ══════════════════════════════════════════════
+function toggleFav(e,i){
+  e.stopPropagation();
+  const r=calcRows.filter((x,idx)=>{ // get sorted index
+    const sorted=sortResults([...calcRows]);
+    return sorted[i]===x;
+  })[0]||calcRows[i];
+  toggleFavDirect(r);
+  renderResults();
+}
+
+function toggleFavDirect(r){
+  const idx=favs.findIndex(f=>f.url===r.url);
+  if(idx>=0) favs.splice(idx,1);
+  else favs.unshift({...r,savedAt:new Date().toLocaleDateString('pt-PT')});
+  localStorage.setItem('ai_favs',JSON.stringify(favs.slice(0,200)));
+  updateBadges();
+  // If on dashboard, refresh fav preview
+  if(document.getElementById('view-dashboard').classList.contains('active')) renderFavPreview();
+  // If on favoritos, re-render
+  if(document.getElementById('view-favoritos').classList.contains('active')) renderFavoritos();
+}
+
+function renderFavoritos(){
+  updateBadges();
+  if(!favs.length){
+    document.getElementById('fav-empty').classList.remove('hidden');
+    document.getElementById('fav-grid').classList.add('hidden');
+    return;
+  }
+  document.getElementById('fav-empty').classList.add('hidden');
+  const grid=document.getElementById('fav-grid');
+  grid.classList.remove('hidden');
+  grid.innerHTML='';
+  // Build cards from favs directly (not calcRows)
+  favs.forEach((r,i)=>{
+    const card = buildFavCard(r, i);
+    grid.appendChild(card);
+  });
+}
+
+function buildFavCard(r, i){
+  const fc=r.combustivel==='Elétrico'?'t-elec':r.combustivel==='PHEV'?'t-phev':r.combustivel==='Gasóleo'?'t-diesel':r.combustivel==='Híbrido Mild'?'t-mild':'t-gas';
+  const scColor=r.score>=30?'var(--green)':r.score>=15?'var(--amber)':'var(--accent)';
+  const div=document.createElement('div');
+  div.className='car-card';
+  // Source badges
+  const srcs = r.fontes || [r.fonte||'AS24'];
+  const srcBadges = srcs.map(s=>`<span class="src-badge-pill ${s==='AS24'?'src-as24':s==='MDE'?'src-mde':'src-merged'}">${s}</span>`).join('');
+  div.innerHTML=`
+    <button class="fav-btn active" onclick="removeFavAt(event,${i})" title="Remover dos favoritos">♥</button>
+    <div class="car-card-img">
+      ${r.foto_url?`<img src="${r.foto_url}" onerror="this.parentNode.innerHTML='🚗'" loading="lazy">`:'🚗'}
+    </div>
+    <div class="car-card-body">
+      <div style="display:flex;gap:4px;margin-bottom:6px;">${srcBadges}</div>
+      <div class="car-card-title">${r.marca} ${r.modelo}</div>
+      <div class="car-card-sub">${r.submodelo||''}</div>
+      <div class="car-card-meta">
+        <span class="meta-pill">${r.ano||'—'}</span>
+        <span class="meta-pill">${fmt(r.km||0)} km</span>
+        <span class="tag ${fc}">${r.combustivel}</span>
+      </div>
+      <div class="car-card-costs">
+        <div class="cc-item"><div class="cc-label">Compra</div><div class="cc-val">${fmt(r.preco||0)}€</div></div>
+        <div class="cc-item"><div class="cc-label">ISV</div><div class="cc-val">${fmt(r.isv||0)}€</div></div>
+        <div class="cc-item"><div class="cc-label">Custo Total</div><div class="cc-val" style="color:var(--accent);">${fmt(r.custo||0)}€</div></div>
+        <div class="cc-item"><div class="cc-label">Margem Líq.</div><div class="cc-val" style="color:${r.ml!=null&&r.ml>=0?'var(--green)':'var(--accent)'};">${r.ml!=null?fmt(r.ml)+'€':'—'}</div></div>
+      </div>
+    </div>`;
+  div.addEventListener('click', (e)=>{
+    if(e.target.closest('.fav-btn')) return; // don't open modal when clicking fav
+    openCarModal(r);
+  });
+  return div;
+}
+
+function removeFavAt(e, i){
+  e.stopPropagation();
+  favs.splice(i, 1);
+  localStorage.setItem('ai_favs', JSON.stringify(favs));
+  updateBadges();
+  renderFavoritos();
+  if(document.getElementById('view-dashboard').classList.contains('active')) renderFavPreview();
+}
+
+function renderFavPreview(){
+  const el=document.getElementById('fav-preview');
+  if(!favs.length){el.innerHTML='<div class="empty"><div class="empty-icon">♥</div><div class="empty-text">Nenhum favorito ainda.</div></div>';return;}
+  const wrap = document.createElement('div');
+  wrap.style.cssText='padding:14px;display:flex;flex-direction:column;gap:10px;';
+  favs.slice(0,5).forEach((r,i)=>{
+    const fc=r.combustivel==='Elétrico'?'t-elec':r.combustivel==='PHEV'?'t-phev':r.combustivel==='Gasóleo'?'t-diesel':r.combustivel==='Híbrido Mild'?'t-mild':'t-gas';
+    const scColor=!r.score?'var(--ink3)':r.score>=30?'var(--green)':r.score>=15?'var(--amber)':'var(--accent)';
+    const row = document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:14px;padding:10px 14px;border:1px solid var(--border2);border-radius:var(--r);background:var(--surface);cursor:pointer;';
+    row.innerHTML=`
+      <div style="width:48px;height:48px;border-radius:var(--r);background:var(--surface2);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:22px;">
+        ${r.foto_url?`<img src="${r.foto_url}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentNode.innerHTML='🚗'">`:'🚗'}
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-family:var(--syne);font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.marca} ${r.modelo}</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:1px;">${r.ano||'—'} · ${(r.km||0).toLocaleString('pt-PT')} km · <span class="tag ${fc}" style="font-size:9px;padding:1px 5px;">${r.combustivel}</span></div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        ${r.custo?`<div style="font-family:var(--syne);font-size:13px;font-weight:700;">${fmt(r.custo)}€</div><div style="font-size:10px;color:var(--ink3);">custo total</div>`:''}
+        ${r.ml!=null?`<div style="font-size:12px;font-weight:600;color:${r.ml>=0?'var(--green)':'var(--accent)'};">${fmt(r.ml)}€ líq.</div>`:''}
+      </div>
+      ${r.score!=null?`<div style="font-family:var(--syne);font-size:14px;font-weight:800;color:${scColor};min-width:28px;text-align:center;">${r.score}</div>`:''}
+      <button onclick="removeFavDash(event,${i})" title="Remover favorito" style="border:none;background:none;cursor:pointer;color:var(--accent);font-size:18px;padding:4px 6px;flex-shrink:0;" >♥</button>`;
+    const rowBody = row.querySelector('div[style*="flex:1"]'); if(rowBody) rowBody.addEventListener('click',()=>openCarModal(r));
+    wrap.appendChild(row);
+  });
+  if(favs.length>5){
+    const more=document.createElement('div');
+    more.style.cssText='text-align:center;padding:8px;font-size:11px;color:var(--ink3);cursor:pointer;';
+    more.textContent=`+ ${favs.length-5} favoritos → ver todos`;
+    more.onclick=()=>goView('favoritos');
+    wrap.appendChild(more);
+  }
+  el.innerHTML='';el.appendChild(wrap);
+}
+
+function removeFavDash(e,i){
+  e.stopPropagation();
+  favs.splice(i,1);
+  localStorage.setItem('ai_favs',JSON.stringify(favs));
+  updateBadges();
+  renderFavPreview();
+  if(document.getElementById('view-favoritos').classList.contains('active')) renderFavoritos();
+}
+
+// ══════════════════════════════════════════════
+// SAVE / HISTORY
+// ══════════════════════════════════════════════
+function saveAnalysis(){
+  const name=document.getElementById('analysis-name').value||'Análise '+new Date().toLocaleDateString('pt-PT');
+  // Ensure all cars have current svRef before saving
+  const curSvRef = svMarket.preco_medio || 0;
+  if(curSvRef) {
+    calcRows = calcRows.map(r=>r.svRef===curSvRef?r:{...r,svRef:curSvRef,...calcMarg({...r,svRef:curSvRef})});
+    eliminatedRows = eliminatedRows.map(r=>r.svRef===curSvRef?r:{...r,svRef:curSvRef,...calcMarg({...r,svRef:curSvRef})});
+  }
+  // Collect search URLs used in this analysis
+  const searchUrls = [];
+  const as24Url = document.getElementById('as24-url-input')?.value?.trim();
+  const mdeUrl  = document.getElementById('mde-url-input')?.value?.trim();
+  const svUrl   = document.getElementById('sv-url-input')?.value?.trim();
+  if(as24Url) searchUrls.push({url: as24Url, source: 'as24'});
+  if(mdeUrl)  searchUrls.push({url: mdeUrl,  source: 'mde'});
+  if(svUrl)   searchUrls.push({url: svUrl,   source: 'sv'});
+
+  const entry={
+    id:Date.now(), name, date:new Date().toLocaleDateString('pt-PT'),
+    cars:calcRows, eliminados:eliminatedRows, market:svMarket, norma:document.getElementById('ov-norma')?.value||'WLTP',
+    searchUrls,
+    syncEnabled: false,
+    minScore: 7,
+    ntfyChannel: '',
+    svRows: files.sv?.rows||[],
+    svSelected: svSelectedRows,
+    count:calcRows.length,
+    avgScore:calcRows.filter(r=>r.score!=null).length?Math.round(calcRows.filter(r=>r.score!=null).reduce((a,r)=>a+(r.score||0),0)/calcRows.filter(r=>r.score!=null).length):null,
+    avgMarg:calcRows.filter(r=>r.ml!=null).length?Math.round(calcRows.filter(r=>r.ml!=null).reduce((a,r)=>a+(r.ml||0),0)/calcRows.filter(r=>r.ml!=null).length):null,
+  };
+  analyses.unshift(entry);
+  analyses=analyses.slice(0,50);
+  localStorage.setItem('ai_analyses',JSON.stringify(analyses));
+  updateBadges();
+  const btn=event.target; btn.textContent='✓ Guardado!'; setTimeout(()=>btn.textContent='💾 Guardar Análise',2000);
+}
+
+function renderHistorico(){
+  updateBadges();
+  if(!analyses.length){
+    document.getElementById('hist-empty').classList.remove('hidden');
+    document.getElementById('hist-grid').classList.add('hidden');
+    return;
+  }
+  document.getElementById('hist-empty').classList.add('hidden');
+  const grid=document.getElementById('hist-grid');
+  grid.classList.remove('hidden');
+  grid.innerHTML='';
+  analyses.forEach((a,i)=>{
+    const div=document.createElement('div');
+    div.className='analysis-card';
+    div.innerHTML=`
+      <button class="ac-del" onclick="deleteAnalysis(event,${i})" title="Apagar análise">✕</button>
+      <div class="ac-title" contenteditable="true" onblur="renameAnalysis(this,${i})" style="outline:none;border-bottom:1px dashed transparent;padding-right:24px;" onfocus="this.style.borderBottomColor='var(--accent)'" onblur="this.style.borderBottomColor='transparent'">${a.name}</div>
+      <div class="ac-sub">${a.date} · ${a.count} carros · clica para abrir</div>
+      <div class="ac-stats">
+        <div class="ac-stat"><div class="ac-stat-val">${a.count}</div><div class="ac-stat-label">Carros</div></div>
+        <div class="ac-stat"><div class="ac-stat-val">${a.avgScore!=null?a.avgScore:'—'}</div><div class="ac-stat-label">Score Médio</div></div>
+      </div>
+      <div style="margin-top:12px;">
+        <button class="btn btn-primary btn-sm" onclick="loadAnalysis(event,${i})">→ Abrir análise</button>
+      </div>`;
+    grid.appendChild(div);
+  });
+}
+
+function loadAnalysis(e, i){
+  e.stopPropagation();
+  const a = analyses[i];
+  if(!a||!a.cars) return;
+  // Restore analysis state
+  processedOrigin = a.cars;
+  calcRows = a.cars.map(r=>({...r}));
+  eliminatedRows = a.eliminados || [];
+  svMarket = a.market || {};
+  // Restore norma override
+  if(a.norma){
+    const normaEl = document.getElementById('ov-norma');
+    if(normaEl) normaEl.value = a.norma;
+  }
+  // Restore SV data so "Rever Mercado PT" works on saved analyses
+  if(a.svRows && a.svRows.length){
+    files.sv = {rows: a.svRows, name: 'guardado'};
+    svSelectedRows = a.svSelected || a.svRows.map((_,i)=>i);
+  }
+  document.getElementById('analysis-name').value = a.name;
+  // Go to analise view, step 4
+  goView('analise');
+  [1,2,3].forEach(n=>{
+    document.getElementById('wf-step'+n).classList.add('hidden');
+    document.getElementById('ws'+n).classList.remove('active');
+    document.getElementById('ws'+n).classList.add('done');
+  });
+  document.getElementById('wf-step4').classList.remove('hidden');
+  document.getElementById('ws4').classList.add('active');
+  document.getElementById('ov-legal').value = getLegalTotal();
+  if(svMarket.preco_medio) renderMarketHeader();
+  renderResults();
+}
+
+function renameAnalysis(el,i){
+  analyses[i].name=el.textContent.trim()||'Análise '+(i+1);
+  el.style.borderColor='transparent';
+  localStorage.setItem('ai_analyses',JSON.stringify(analyses));
+}
+
+function deleteAnalysis(e,i){
+  e.stopPropagation();
+  if(!confirm('Apagar esta análise?'))return;
+  analyses.splice(i,1);
+  localStorage.setItem('ai_analyses',JSON.stringify(analyses));
+  renderHistorico();
+}
+
+// ══════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════
+let transportMode = 'geral';
+
+function setTransportMode(mode){
+  transportMode = mode;
+  const gBtn = document.getElementById('btn-transp-geral');
+  const pBtn = document.getElementById('btn-transp-pais');
+  const gBody = document.getElementById('transp-geral-body');
+  const pBody = document.getElementById('transp-pais-body');
+  if(mode==='geral'){
+    gBtn.style.background='var(--accent)';gBtn.style.color='#fff';
+    pBtn.style.background='var(--surface)';pBtn.style.color='var(--ink2)';
+    gBody.classList.remove('hidden');pBody.classList.add('hidden');
+  } else {
+    pBtn.style.background='var(--accent)';pBtn.style.color='#fff';
+    gBtn.style.background='var(--surface)';gBtn.style.color='var(--ink2)';
+    gBody.classList.add('hidden');pBody.classList.remove('hidden');
+    renderTransportPais();
+  }
+}
+
+function updateTranspGeral(){
+  const val = parseFloat(document.getElementById('transp-geral-val').value)||700;
+  Object.keys(cfg.transport).forEach(k=>cfg.transport[k]=val);
+}
+
+function renderTransportPais(){
+  const pBody = document.getElementById('transp-pais-body');
+  if(!pBody) return;
+  pBody.innerHTML = Object.entries(cfg.transport).map(([k,v])=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border2);">
+      <label style="font-size:12px;color:var(--ink);">${k}</label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input class="form-input" type="number" value="${v}" data-t="${k}" onchange="updateCfg()" style="width:110px;">
+        <span style="font-size:11px;color:var(--ink3);width:14px;">€</span>
+      </div>
+    </div>`).join('');
+}
+
+function renderConfig(){
+  // Transport - geral mode by default
+  const geralVal = Object.values(cfg.transport)[0]||700;
+  const geralInput = document.getElementById('transp-geral-val');
+  if(geralInput) geralInput.value = geralVal;
+
+  // Legal rows
+  const lRows = document.getElementById('cfg-legal-rows');
+  if(lRows){
+    lRows.innerHTML = Object.entries(cfg.legal).map(([k,v])=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border2);">
+        <label style="font-size:12px;color:var(--ink);">${k}</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input class="form-input" type="number" value="${v}" data-l="${k}" onchange="updateCfg()" style="width:110px;">
+          <span style="font-size:11px;color:var(--ink3);width:14px;">€</span>
+        </div>
+      </div>`).join('');
+  }
+  updateCfg();
+}
+
+function toggleISVTable(){
+  const body = document.getElementById('isv-table-body');
+  const icon = document.getElementById('isv-toggle-icon');
+  if(body.classList.contains('hidden')){
+    body.classList.remove('hidden');
+    icon.textContent='▾ Fechar tabela';
+  } else {
+    body.classList.add('hidden');
+    icon.textContent='▸ Ver tabela';
+  }
+}
+
+function updateCfg(){
+  document.querySelectorAll('[data-t]').forEach(el=>cfg.transport[el.dataset.t]=parseFloat(el.value)||0);
+  document.querySelectorAll('[data-l]').forEach(el=>cfg.legal[el.dataset.l]=parseFloat(el.value)||0);
+  const tot=getLegalTotal();
+  const el=document.getElementById('cfg-legal-total');
+  if(el)el.textContent=fmt(tot)+' €';
+}
+
+function saveConfig(){
+  updateCfg();
+  localStorage.setItem('ai_cfg2',JSON.stringify(cfg));
+
+  // Recalculate all saved analyses with new costs
+  let recalcCount = 0;
+  analyses = analyses.map(a => {
+    if(!a.cars) return a;
+    const savedNorma = a.norma || 'WLTP';
+    const recalcCars = a.cars.map(r => {
+      const rWithNorma = {...r, co2_norma: r.co2_norma || savedNorma};
+      const m = calcMargWithCfg(rWithNorma, cfg);
+      return {...rWithNorma, ...m, svRef: r.svRef};
+    });
+    const recalcElim = (a.eliminados||[]).map(r => {
+      const m = calcMargWithCfg(r, cfg);
+      return {...r, ...m, svRef: r.svRef};
+    });
+    const wScore = recalcCars.filter(r=>r.score!=null);
+    const wMarg = recalcCars.filter(r=>r.ml!=null);
+    recalcCount++;
+    return {
+      ...a,
+      cars: recalcCars,
+      eliminados: recalcElim,
+      avgScore: wScore.length ? Math.round(wScore.reduce((s,r)=>s+(r.score||0),0)/wScore.length) : null,
+      avgMarg: wMarg.length ? Math.round(wMarg.reduce((s,r)=>s+(r.ml||0),0)/wMarg.length) : null,
+    };
+  });
+  localStorage.setItem('ai_analyses', JSON.stringify(analyses));
+
+  // Also recalc current open analysis if any
+  if(calcRows.length){
+    calcRows = calcRows.map(r=>({...r,...calcMarg(r)}));
+    eliminatedRows = eliminatedRows.map(r=>({...r,...calcMarg(r)}));
+    renderResults();
+  }
+
+  const btn=event.target;
+  btn.textContent = recalcCount > 0
+    ? `✓ Guardado · ${recalcCount} análise(s) recalculada(s)!`
+    : '✓ Guardado!';
+  setTimeout(()=>btn.textContent='Guardar Configurações',2500);
+}
+
+// calcMarg using a specific cfg (for recalculation of saved analyses)
+function calcMargWithCfg(r, c){
+  const legal = Object.values(c.legal).reduce((a,b)=>a+b,0);
+  const norma = r.co2_norma || 'WLTP';
+  const transp = c.transport[r.pais] || 700;
+  const temF = String(r.filtro_particulas||'').toLowerCase()==='sim';
+  const isv = calcISV(r.cilindrada||0, r.co2||0, r.combustivel, norma, r.ano||2020, temF);
+  const custo = (r.preco||0) + transp + isv + legal;
+  // svRef is saved on the car; if missing reconstruct from mb+custo
+  const svRef = r.svRef || (r.mb != null && r.custo ? r.custo + r.mb : 0);
+  const mb = svRef ? svRef - custo : null;
+  const ivaM = svRef ? Math.round(0.23*(svRef-(r.preco||0))) : null;
+  const ml = mb!=null&&ivaM!=null ? mb-ivaM : null;
+  const mp = mb!=null&&custo>0 ? mb/custo : null;
+  const score = mp!=null ? Math.min(100,Math.max(0,Math.round(mp*200))) : null;
+  return {transp, isv, legal, custo, mb, ivaM, ml, mp, score};
+}
+
+// ══════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════
+function renderDashboard(){
+  try { renderFavPreview(); } catch(e){ console.error('renderFavPreview error:',e); }
+
+  // Last analyses
+  const el=document.getElementById('dash-analyses');
+  if(!analyses.length){el.innerHTML='<div class="empty"><div class="empty-icon">◈</div><div class="empty-text">Nenhuma análise ainda.</div></div>';return;}
+  const wrap=document.createElement('div');
+  wrap.style.cssText='padding:14px;display:flex;flex-direction:column;gap:10px;';
+  analyses.slice(0,5).forEach((a,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;gap:14px;padding:12px 16px;border:1px solid var(--border2);border-radius:var(--r);background:var(--surface);';
+    div.innerHTML=`
+      <div style="flex:1;min-width:0;">
+        <div style="font-family:var(--syne);font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.name}</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${a.date} · ${a.count} carros</div>
+      </div>
+      <div style="display:flex;gap:16px;flex-shrink:0;">
+        <div style="text-align:center;">
+          <div style="font-family:var(--syne);font-size:15px;font-weight:700;">${a.avgScore||'—'}</div>
+          <div style="font-size:9px;color:var(--ink3);text-transform:uppercase;">Score</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button onclick="loadAnalysis(event,${i})" style="border:1px solid var(--border);background:transparent;color:var(--ink2);padding:5px 10px;border-radius:var(--r);cursor:pointer;font-size:11px;font-family:var(--mono);">→ Abrir</button>
+        <button onclick="deleteAnalysisDash(event,${i})" title="Eliminar análise" style="border:1px solid var(--border);background:transparent;color:var(--accent);padding:5px 8px;border-radius:var(--r);cursor:pointer;font-size:13px;">✕</button>
+      </div>`;
+    wrap.appendChild(div);
+  });
+  if(analyses.length>5){
+    const more=document.createElement('div');
+    more.style.cssText='text-align:center;padding:8px;font-size:11px;color:var(--ink3);cursor:pointer;';
+    more.textContent=`+ ${analyses.length-5} análises → ver todas`;
+    more.onclick=()=>goView('historico');
+    wrap.appendChild(more);
+  }
+  el.innerHTML=''; el.appendChild(wrap);
+}
+
+function loadAnalysisAndReviewSV(e,i){
+  e.stopPropagation();
+  loadAnalysis(e,i);
+  // Open SV review after a short delay to let the view render
+  setTimeout(()=>abrirReverMercado(), 300);
+}
+
+function deleteAnalysisDash(e,i){
+  e.stopPropagation();
+  if(!confirm(`Eliminar a análise "${analyses[i]?.name}"?`)) return;
+  analyses.splice(i,1);
+  localStorage.setItem('ai_analyses',JSON.stringify(analyses));
+  updateBadges();
+  renderDashboard();
+  if(document.getElementById('view-historico').classList.contains('active')) renderHistorico();
+}
+
+// ══════════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════════
+function exportCSV(){
+  const headers=['Marca','Modelo','Submodelo','Ano','Km','Combustível','CO2','Cilindrada','Potência','País','Preço','Transporte','ISV','Legalização','Custo Total','Ref.SV','Margem Bruta','IVA','Margem Líq.','Margem%','Score','URL'];
+  const rows=calcRows.map(r=>[r.marca,r.modelo,r.submodelo,r.ano,r.km,r.combustivel,r.co2,r.cilindrada,r.potencia,r.pais,r.preco,r.transp,r.isv,r.legal,r.custo,svMarket.preco_medio||'',r.mb||'',r.ivaM||'',r.ml||'',r.mp!=null?(r.mp*100).toFixed(1)+'%':'',r.score||'',r.url].map(v=>`"${(v??'').toString().replace(/"/g,'""')}"`).join(','));
+  const csv=[headers.join(','),...rows].join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
+  a.download=`autoimport_${Date.now()}.csv`;a.click();
+}
+
+// ══════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════
+function fmt(n){return(n||0).toLocaleString('pt-PT');}
+function log(src,msg,type){
+  // Update animated loading UI instead of showing console
+  const labelEl = document.getElementById('proc-label');
+  if(labelEl && msg) labelEl.textContent = msg;
+  // Track stats
+  if(type==='ok' && src.startsWith('#')){
+    logStats.ok = (logStats.ok||0)+1;
+  } else if(type==='warn'){
+    logStats.warn = (logStats.warn||0)+1;
+  } else if(type==='err'){
+    logStats.err = (logStats.err||0)+1;
+  }
+  updateProcStats();
+}
+let logStats = {};
+
+function updateProcStats(){
+  const el = document.getElementById('proc-stats');
+  if(!el) return;
+  const parts = [];
+  if(logStats.ok) parts.push(`<div style="text-align:center;"><div style="font-family:var(--syne);font-size:20px;font-weight:700;color:var(--green);">${logStats.ok}</div><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;">Processados</div></div>`);
+  if(logStats.warn) parts.push(`<div style="text-align:center;"><div style="font-family:var(--syne);font-size:20px;font-weight:700;color:var(--amber);">${logStats.warn}</div><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;">A verificar</div></div>`);
+  if(logStats.err) parts.push(`<div style="text-align:center;"><div style="font-family:var(--syne);font-size:20px;font-weight:700;color:var(--accent);">${logStats.err}</div><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;">Erros</div></div>`);
+  el.innerHTML = parts.join('');
+}
+const phaseEmojis = ['🔍','⚡','🧮','✅'];
+let phaseIdx = 0;
+
+function updProg(done,total,label){
+  const pct=Math.round(done/total*100);
+  const f=document.getElementById('proc-fill');
+  const ll=document.getElementById('proc-label');
+  const pc=document.getElementById('proc-count');
+  const anim=document.getElementById('proc-cars-anim');
+  const phase=document.getElementById('proc-phase-title');
+  if(f)f.style.width=pct+'%';
+  if(ll)ll.textContent=label;
+  // count hidden
+  // Update emoji based on progress
+  if(anim){
+    if(pct<30) anim.textContent='🚗';
+    else if(pct<60) anim.textContent='🔍';
+    else if(pct<85) anim.textContent='⚡';
+    else if(pct<100) anim.textContent='🧮';
+    else anim.textContent='✅';
+  }
+  if(phase){
+    if(pct<5) phase.textContent='A normalizar dados...';
+    else if(pct<50) phase.textContent='A processar com IA...';
+    else if(pct<80) phase.textContent='A analisar mercado PT...';
+    else if(pct<100) phase.textContent='A calcular margens e scores...';
+    else phase.textContent='Concluído!';
+  }
+}
+function updateBadges(){
+  document.getElementById('fav-badge').textContent=favs.length;
+  document.getElementById('hist-badge').textContent=analyses.length;
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// ══════════════════════════════════════════════
+// ELIMINAR / RESTAURAR ANÚNCIOS
+// ══════════════════════════════════════════════
+let eliminatedRows = [];
+
+function eliminarCarro(e, i){
+  e.stopPropagation();
+  const sorted = sortResults([...calcRows]);
+  const r = sorted[i];
+  if(!r) return;
+  // Move from calcRows to eliminatedRows
+  const idx = calcRows.findIndex(c => c.url === r.url);
+  if(idx !== -1){
+    eliminatedRows.push(calcRows.splice(idx, 1)[0]);
+  }
+  renderResults();
+  renderEliminados();
+}
+
+function restaurarCarro(e, i){
+  e.stopPropagation();
+  const r = eliminatedRows.splice(i, 1)[0];
+  if(r){
+    calcRows.push({...r, ...calcMarg(r)});
+    renderResults();
+    renderEliminados();
+  }
+}
+
+function renderEliminados(){
+  const sec = document.getElementById('eliminated-section');
+  const badge = document.getElementById('elim-count-badge');
+  const grid = document.getElementById('elim-car-grid');
+  if(!sec) return;
+
+  if(!eliminatedRows.length){
+    sec.classList.add('hidden');
+    return;
+  }
+
+  sec.classList.remove('hidden');
+  badge.textContent = eliminatedRows.length;
+  grid.innerHTML = '';
+
+  eliminatedRows.forEach((r, i) => {
+    const fc = r.combustivel==='Elétrico'?'t-elec':r.combustivel==='PHEV'?'t-phev':r.combustivel==='Gasóleo'?'t-diesel':r.combustivel==='Híbrido Mild'?'t-mild':'t-gas';
+    const div = document.createElement('div');
+    div.className = 'car-card';
+    div.style.cssText = 'opacity:0.65;position:relative;';
+    div.innerHTML = `
+      <button onclick="restaurarCarro(event,${i})" title="Restaurar anúncio" style="position:absolute;top:8px;left:8px;z-index:10;background:var(--green);color:#fff;border:none;border-radius:var(--r);padding:4px 10px;font-size:10px;cursor:pointer;font-family:var(--mono);">↩ Restaurar</button>
+      <div class="car-card-img">
+        ${r.foto_url ? `<img src="${r.foto_url}" onerror="this.parentNode.innerHTML='🚗'" loading="lazy">` : '🚗'}
+      </div>
+      <div class="car-card-body">
+        <div class="car-card-title">${r.marca} ${r.modelo}</div>
+        <div class="car-card-sub">${r.submodelo||''}</div>
+        <div class="car-card-meta">
+          <span class="meta-pill">${r.ano||'—'}</span>
+          <span class="meta-pill">${fmt(r.km||0)} km</span>
+          <span class="tag ${fc}">${r.combustivel}</span>
+        </div>
+        <div style="font-size:11px;color:var(--accent);margin-top:6px;">✕ Eliminado — clica em Restaurar para reverter</div>
+      </div>`;
+    div.querySelector('.car-card-body').addEventListener('click', () => openCarModal(r));
+    grid.appendChild(div);
+  });
+}
+
+function toggleEliminados(){
+  const body = document.getElementById('eliminated-grid');
+  const icon = document.getElementById('elim-toggle-icon');
+  if(!body) return;
+  const hidden = body.classList.toggle('hidden');
+  icon.textContent = hidden ? '▸' : '▾';
+}
+
+// ══════════════════════════════════════════════
+// EXPORTAR / IMPORTAR DADOS
+// ══════════════════════════════════════════════
+function exportarDados(){
+  const dados = {
+    versao: '1.0',
+    exportadoEm: new Date().toISOString(),
+    analyses,
+    favs,
+    cfg
+  };
+  const json = JSON.stringify(dados, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'autoimport_dados_' + new Date().toLocaleDateString('pt-PT').split('/').join('-') + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importarDados(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const dados = JSON.parse(e.target.result);
+      if(!dados.versao) throw new Error('Ficheiro inválido');
+
+      // Contar o que vai ser importado
+      const nAnalises = (dados.analyses||[]).length;
+      const nFavs = (dados.favs||[]).length;
+
+      const msg = `Importar ${nAnalises} análise(s) e ${nFavs} favorito(s)?
+
+Escolhe o modo:
+• OK = Juntar aos dados existentes
+• Cancelar = Não importar`;
+      if(!confirm(msg)) { input.value=''; return; }
+
+      // Merge — evitar duplicados por data+nome
+      const existingIds = new Set(analyses.map(a=>a.name+'_'+a.date));
+      const novasAnalises = (dados.analyses||[]).filter(a=>!existingIds.has(a.name+'_'+a.date));
+      analyses = [...novasAnalises, ...analyses].slice(0, 50);
+
+      const existingUrls = new Set(favs.map(f=>f.url));
+      const novosFavs = (dados.favs||[]).filter(f=>!existingUrls.has(f.url));
+      favs = [...novosFavs, ...favs].slice(0, 200);
+
+      // Guardar
+      localStorage.setItem('ai_analyses', JSON.stringify(analyses));
+      localStorage.setItem('ai_favs', JSON.stringify(favs));
+
+      // Importar config se não houver dados locais
+      if(dados.cfg && !localStorage.getItem('ai_cfg2')){
+        cfg = dados.cfg;
+        localStorage.setItem('ai_cfg2', JSON.stringify(cfg));
+      }
+
+      updateBadges();
+      renderDashboard();
+
+      input.value = '';
+      alert('✓ Importado! ' + novasAnalises.length + ' análise(s) nova(s), ' + novosFavs.length + ' favorito(s) novo(s)');
+
+    } catch(err) {
+      alert('Erro ao importar: ficheiro inválido ou corrompido. ' + err.message);
+      input.value = '';
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+// ══════════════════════════════════════════════
+// SEARCHABLE SELECT — Marca e Modelo
+// ══════════════════════════════════════════════
+const CAR_DATA = {
+  'Abarth':{ models:['124 Spider','500','595','695'], variants:{'595':['Competizione','Esseesse','Turismo'],'695':['Biposto','Rivale','Edizione Maserati']} },
+  'Alfa Romeo':{ models:['147','156','159','Brera','Giulia','Giulietta','GTV','MiTo','Spider','Stelvio','Tonale'], variants:{'Giulia':['2.0T','Quadrifoglio','Veloce','Sprint','Super'],'Stelvio':['2.0T','Quadrifoglio','Veloce','Sprint'],'Giulietta':['1.4 TB','1.8 TB Quadrifoglio','Sprint','Veloce']} },
+  'Aston Martin':{ models:['DB9','DB11','DBS','DBX','Rapide','Vantage','Vanquish','Virage'], variants:{'DB11':['V8','V12','AMR','Volante'],'DBS':['Superleggera','Volante'],'Vantage':['V8','F1 Edition','Roadster','AMR'],'DBX':['DBX','DBX707']} },
+  'Audi':{ models:['A1','A2','A3','A4','A5','A6','A7','A8','e-tron','e-tron GT','Q2','Q3','Q4 e-tron','Q5','Q6 e-tron','Q7','Q8','R8','RS3','RS4','RS5','RS6','RS7','RS Q3','RS Q8','S1','S3','S4','S5','S6','S7','S8','SQ5','SQ7','SQ8','TT','TTS','TT RS'],
+    variants:{'A3':['30 TFSI','35 TFSI','40 TFSI','35 TDI','S3','RS3','Sportback','Limousine','Cabriolet'],'A4':['35 TFSI','40 TFSI','45 TFSI','40 TDI','S4','RS4','Avant','Allroad'],'A5':['35 TFSI','40 TFSI','45 TFSI','S5','RS5','Sportback','Coupé','Cabriolet'],'A6':['35 TFSI','45 TFSI','40 TDI','50 TDI','S6','RS6','Allroad'],'Q5':['35 TFSI','40 TFSI','45 TFSI','40 TDI','50 TDI','SQ5','Sportback'],'Q7':['45 TFSI','50 TDI','55 TFSI','SQ7'],'Q8':['50 TFSI','55 TFSI','50 TDI','SQ8','RS Q8'],'R8':['V10','V10 Plus','V10 Performance','Spyder'],'RS6':['RS6 Avant','RS6 Performance'],'TT':['45 TFSI','TTS','TT RS Coupé','TT RS Roadster']} },
+  'Bentley':{ models:['Bentayga','Continental GT','Flying Spur','Mulsanne','Bacalar'], variants:{'Bentayga':['V8','W12','S','Speed','EWB','Azure'],'Continental GT':['V8','W12','Speed','Mulliner','GTC V8','GTC W12','GTC Speed'],'Flying Spur':['V6','V8','W12','S','Mulliner']} },
+  'BMW':{ models:['i3','i4','i5','i7','iX','iX1','iX2','iX3','M2','M3','M4','M5','M6','M8','X1','X2','X3','X4','X5','X6','X7','XM','Z3','Z4','1 Series','2 Series','3 Series','4 Series','5 Series','6 Series','7 Series','8 Series'],
+    variants:{'M2':['M2','M2 Competition','M2 CS'],'M3':['M3','M3 Competition','M3 Competition xDrive','M3 CS','M3 Touring','M3 Touring xDrive'],'M4':['M4','M4 Competition','M4 Competition xDrive','M4 CS','M4 CSL','M4 GTS','M4 Cabriolet'],'M5':['M5','M5 Competition','M5 CS','M5 Touring'],'M8':['M8 Coupé','M8 Cabriolet','M8 Gran Coupé','M8 Competition'],'X3':['xDrive20i','xDrive30i','xDrive20d','xDrive30d','M40i','M40d','M Competition'],'X5':['xDrive40i','xDrive50i','xDrive30d','xDrive40d','xDrive45e','M50i','M50d','M Competition'],'X6':['xDrive40i','xDrive50i','xDrive30d','xDrive40d','M50i','M Competition'],'X7':['xDrive40i','xDrive50i','xDrive30d','xDrive40d','M50i','M60i'],'iX':['iX xDrive40','iX xDrive50','iX M60'],'i4':['eDrive35','eDrive40','M50'],'3 Series':['318i','320i','330i','340i','318d','320d','330d','M340i','M340d','Touring','Limousine'],'5 Series':['520i','530i','540i','520d','530d','540d','M550i','Limousine','Touring'],'Z4':['sDrive20i','sDrive30i','M40i','sDrive20d']} },
+  'Chevrolet':{ models:['Camaro','Corvette','Silverado','Tahoe'], variants:{'Camaro':['SS','ZL1','Z/28','1LE'],'Corvette':['Stingray','Z06','ZR1','Grand Sport']} },
+  'Citroën':{ models:['Berlingo','C1','C2','C3','C3 Aircross','C4','C4 Picasso','C5','C5 Aircross','C5 X','C6','DS3','DS4','DS5'], variants:{} },
+  'Cupra':{ models:['Ateca','Born','Formentor','Leon'], variants:{'Formentor':['1.4 e-Hybrid','2.0 TSI 310','VZ5'],'Leon':['1.4 e-Hybrid','2.0 TSI','VZ']} },
+  'Dodge':{ models:['Challenger','Charger','Durango','Viper'], variants:{'Challenger':['R/T','Scat Pack','Hellcat','SRT Demon','SRT Super Stock'],'Charger':['R/T','Scat Pack','Hellcat','SRT Hellcat Redeye']} },
+  'Ferrari':{ models:['296 GTB','296 GTS','348','355','360','430','458','488','812','California','F40','F50','F8','Enzo','GTC4Lusso','LaFerrari','Portofino','Purosangue','Roma','SF90','Testarossa'],
+    variants:{'488':['488 GTB','488 Spider','488 Pista','488 Pista Spider'],'812':['812 Superfast','812 GTS','812 Competizione','812 Competizione A'],'SF90':['SF90 Stradale','SF90 Spider','SF90 XX'],'296':['296 GTB','296 GTS'],'F8':['F8 Tributo','F8 Spider'],'Portofino':['Portofino','Portofino M'],'458':['458 Italia','458 Spider','458 Speciale','458 Speciale A']} },
+  'Fiat':{ models:['124 Spider','500','500L','500X','Abarth 500','Bravo','Panda','Punto','Tipo'], variants:{'500':['500','500C','500e','Abarth 500','Abarth 595','Abarth 695']} },
+  'Ford':{ models:['C-Max','EcoSport','Edge','Explorer','F-150','Fiesta','Focus','Galaxy','Kuga','Maverick','Mondeo','Mustang','Mustang Mach-E','Puma','Ranger','S-Max'],
+    variants:{'Mustang':['2.3 EcoBoost','5.0 V8 GT','Shelby GT350','Shelby GT350R','Shelby GT500','Mach-E'],'Focus':['ST 2.3','RS','ST-Line','Titanium']} },
+  'Honda':{ models:['Accord','CR-V','Civic','HR-V','Jazz','NSX','Type R','e'], variants:{'Civic':['Type R','Sport','e:HEV','FK2','FK8','FL5'],'NSX':['NSX','NSX Type S']} },
+  'Hyundai':{ models:['i10','i20','i20 N','i30','i30 N','i40','IONIQ 5','IONIQ 6','Kona','Nexo','Santa Fe','Tucson'], variants:{'i30 N':['i30 N','i30 N Performance','i30 N Project C'],'IONIQ 5':['58kWh RWD','77.4kWh RWD','77.4kWh AWD','N'],'Kona':['Kona','Kona N','Electric']} },
+  'Jaguar':{ models:['E-Pace','F-Pace','F-Type','I-Pace','XE','XF','XJ'], variants:{'F-Type':['P300','P380','P450','P575 R SVR','Coupé','Convertible'],'F-Pace':['P250','P400','P400e','SVR'],'XF':['2.0d','2.0i','3.0d','S','Sportbrake']} },
+  'Jeep':{ models:['Cherokee','Compass','Gladiator','Grand Cherokee','Renegade','Wrangler'], variants:{'Wrangler':['Sport','Sahara','Rubicon','4xe'],'Grand Cherokee':['Laredo','Limited','Overland','Summit','SRT','Trackhawk']} },
+  'Kia':{ models:['Ceed','EV6','EV9','Niro','Picanto','ProCeed','Sorento','Soul','Sportage','Stinger','Stonic'], variants:{'Stinger':['2.0T','3.3 V6 GT'],'EV6':['Standard','Long Range','GT']} },
+  'Lamborghini':{ models:['Aventador','Gallardo','Huracan','Murcielago','Urus','Revuelto'],
+    variants:{'Huracan':['LP610-4','LP580-2','Performante','EVO','EVO RWD','STO','Tecnica','Sterrato'],'Aventador':['LP700-4','LP750-4 SV','SVJ','S Roadster','LP780-4 Ultimae'],'Urus':['Urus','Urus S','Urus Performante'],'Revuelto':['Revuelto']} },
+  'Land Rover':{ models:['Defender','Discovery','Discovery Sport','Freelander','Range Rover','Range Rover Evoque','Range Rover Sport','Range Rover Velar'],
+    variants:{'Range Rover':['P400','P530','D300','D350','P400e','SV','Autobiography','Vogue','LWB'],'Range Rover Sport':['P400','P530','P460e','D300','D350','SE','HSE','Autobiography','SVR','SV'],'Range Rover Evoque':['P200','P250','P300','D165','D200','R-Dynamic','S','SE','HSE'],'Defender':['90 P300','90 P400','110 P300','110 P400','110 P500','90 V8','110 V8','130','Works']} },
+  'Lexus':{ models:['CT','ES','GS','IS','LC','LS','LX','NX','RC','RX','UX'], variants:{'LC':['LC500','LC500h','LC500 Convertible'],'RC':['RC300h','RC350','RC F'],'IS':['IS300h','IS350 F Sport'],'NX':['NX300','NX350h','NX450h+']} },
+  'Maserati':{ models:['Ghibli','GranCabrio','GranTurismo','Grecale','Levante','MC20','Quattroporte'],
+    variants:{'GranTurismo':['GranTurismo','Trofeo','Folgore'],'MC20':['MC20','MC20 Cielo','MC20 Notte'],'Levante':['Levante','S','Trofeo','GTS'],'Quattroporte':['GTS','Trofeo','S Q4']} },
+  'Mazda':{ models:['2','3','6','CX-3','CX-30','CX-5','CX-60','CX-9','MX-30','MX-5','RX-8'], variants:{'MX-5':['1.5','2.0','RF','ND','NC','NB','NA'],'3':['2.0 Skyactiv','2.5 Turbo','MPS'],'CX-5':['2.0','2.5','2.2d Skyactiv']} },
+  'McLaren':{ models:['540C','570S','570GT','600LT','620R','650S','675LT','720S','750S','765LT','Artura','Senna','P1','Elva'],
+    variants:{'720S':['720S Coupé','720S Spider','720S Performance'],'765LT':['765LT Coupé','765LT Spider'],'750S':['750S Coupé','750S Spider'],'650S':['650S Coupé','650S Spider','650S Can-Am']} },
+  'Mercedes-Benz':{ models:['A-Class','B-Class','C-Class','CLA','CLS','E-Class','EQA','EQB','EQC','EQE','EQS','G-Class','GLA','GLB','GLC','GLE','GLS','S-Class','SL','AMG GT'],
+    variants:{'C-Class':['C180','C200','C300','C220d','C300d','C43 AMG','C63 AMG','C63 S AMG','C63 AMG E-Performance','Estate','Coupé','Cabriolet'],'E-Class':['E200','E300','E350','E220d','E300d','E350d','E53 AMG','E63 AMG','E63 S AMG','Estate','Coupé','All-Terrain'],'S-Class':['S400d','S450','S500','S580','S63 AMG','S65 AMG','S680','Maybach S580','Maybach S680'],'G-Class':['G350d','G400d','G500','G63 AMG','G65 AMG'],'GLC':['GLC200','GLC300','GLC220d','GLC300d','GLC43 AMG','GLC63 AMG','GLC63 S AMG','GLC63 AMG S','Coupé'],'GLE':['GLE300d','GLE350d','GLE400d','GLE450','GLE53 AMG','GLE63 AMG','GLE63 S AMG','Coupé'],'AMG GT':['AMG GT','AMG GT S','AMG GT C','AMG GT R','AMG GT R Pro','AMG GT 4-Door','AMG GT 63','AMG GT 63 S'],'SL':['SL43','SL55 AMG','SL63 AMG','R231','R232'],'CLA':['CLA200','CLA250','CLA35 AMG','CLA45 AMG','CLA45 S AMG','Shooting Brake']} },
+  'Mini':{ models:['Cabrio','Clubman','Convertible','Countryman','Coupé','Hardtop','JCW','Paceman','Roadster'],
+    variants:{'Countryman':['Cooper','Cooper S','Cooper D','Cooper SD','JCW ALL4'],'Hardtop':['One','Cooper','Cooper S','JCW'],'Clubman':['Cooper','Cooper S','JCW']} },
+  'Mitsubishi':{ models:['ASX','Eclipse Cross','L200','Outlander','Outlander PHEV','Pajero'], variants:{} },
+  'Nissan':{ models:['350Z','370Z','Ariya','GT-R','Juke','Leaf','Micra','Qashqai','X-Trail'],
+    variants:{'GT-R':['GT-R','GT-R Premium','GT-R Track Edition','GT-R Nismo'],'370Z':['370Z','370Z Roadster','370Z NISMO'],'350Z':['350Z Coupé','350Z Roadster','350Z Track']} },
+  'Opel':{ models:['Adam','Astra','Cascada','Corsa','Crossland','Insignia','Meriva','Mokka','Omega','Signum','Vectra','Zafira'], variants:{'Astra':['OPC','GSi','Sports Tourer','GTC']} },
+  'Peugeot':{ models:['106','206','207','208','306','307','308','408','508','2008','3008','4008','5008','e-208','e-2008','RCZ'],
+    variants:{'308':['GTi','SW','e-308'],'508':['SW','GT','PSE','e-508'],'RCZ':['RCZ','RCZ R']} },
+  'Porsche':{ models:['718 Boxster','718 Cayman','911','918','Cayenne','Macan','Panamera','Taycan'],
+    variants:{'911':['992','992.1','992.2','991','991.1','991.2','997','997.1','997.2','Carrera','Carrera S','Carrera 4','Carrera 4S','Targa 4','Targa 4S','GT3','GT3 RS','GT3 Touring','GT2 RS','Turbo','Turbo S','R','ST','Dakar','Sport Classic','GTS'],
+      '718 Cayman':['718 Cayman','718 Cayman S','718 Cayman GTS','718 Cayman GT4','718 Cayman GT4 RS','718 Spyder RS'],'718 Boxster':['718 Boxster','718 Boxster S','718 Boxster GTS','718 Spyder'],'Cayenne':['Cayenne','Cayenne S','Cayenne GTS','Cayenne Turbo','Cayenne Turbo GT','Cayenne E-Hybrid','Turbo S E-Hybrid','Coupé'],'Panamera':['Panamera','Panamera S','Panamera GTS','Panamera Turbo','Panamera Turbo S','Panamera E-Hybrid','Sport Turismo'],'Taycan':['Taycan','Taycan 4S','Taycan GTS','Taycan Turbo','Taycan Turbo S','Taycan Sport Turismo','Taycan Cross Turismo'],'Macan':['Macan','Macan S','Macan GTS','Macan Turbo','Macan EV']} },
+  'Renault':{ models:['Arkana','Captur','Clio','Espace','Kadjar','Koleos','Laguna','Megane','Scenic','Talisman','Twingo','Zoe'],
+    variants:{'Megane':['Megane RS','Megane RS Trophy','Megane RS Trophy-R'],'Clio':['RS','RS Trophy','E-Tech']} },
+  'Rolls-Royce':{ models:['Cullinan','Dawn','Ghost','Phantom','Silver Shadow','Spectre','Wraith'],
+    variants:{'Ghost':['Ghost','Ghost Extended','Black Badge'],'Cullinan':['Cullinan','Black Badge'],'Phantom':['Phantom','Phantom Extended','Black Badge']} },
+  'Seat':{ models:['Arona','Ateca','Ibiza','Leon','Tarraco'], variants:{'Leon':['1.4 TSI','1.5 TSI','2.0 TSI','Cupra','FR','ST']} },
+  'Skoda':{ models:['Enyaq','Fabia','Kamiq','Karoq','Kodiaq','Octavia','Scala','Superb'], variants:{'Octavia':['RS','RS 245','RS 230','iV','Combi'],'Kodiaq':['Scout','SportLine','RS']} },
+  'Subaru':{ models:['BRZ','Forester','Impreza','Levorg','Outback','WRX','WRX STI','XV'], variants:{'WRX STI':['WRX STI','WRX STI S209','WRX STI Type RA'],'BRZ':['BRZ','BRZ tS','BRZ STI Sport']} },
+  'Tesla':{ models:['Cybertruck','Model 3','Model S','Model X','Model Y','Roadster'],
+    variants:{'Model 3':['Standard Range','Long Range','Performance','Highland'],'Model S':['Long Range','Plaid','100D'],'Model X':['Long Range','Plaid','100D'],'Model Y':['Standard Range','Long Range','Performance']} },
+  'Toyota':{ models:['Aygo','C-HR','Camry','Corolla','GR86','GR Supra','GR Yaris','Hilux','Land Cruiser','Prius','RAV4','Yaris','bZ4X'],
+    variants:{'GR Supra':['2.0','3.0','A90','A91'],'GR Yaris':['1.6 Rally','Circuit','Morizo'],'GR86':['GR86 2.4'],'Land Cruiser':['3.0 D-4D','4.5 V8','300 Series']} },
+  'Volkswagen':{ models:['Arteon','Caddy','Golf','ID.3','ID.4','ID.5','ID.7','Multivan','Passat','Polo','Sharan','T-Cross','T-Roc','Tiguan','Touareg','Touran'],
+    variants:{'Golf':['GTI','GTI Performance','GTI Clubsport','GTD','GTE','Golf R','Golf R 20 Years','Golf 8 GTI','Golf 8 R','Golf 7 GTI','Golf 7 R'],'Touareg':['3.0 V6','4.0 V8','R','eHybrid','Black Edition'],'Arteon':['2.0 TSI','Shooting Brake','R']} },
+  'Volvo':{ models:['C30','C40','C70','S40','S60','S80','S90','V40','V60','V70','V90','XC40','XC60','XC70','XC90'],
+    variants:{'XC60':['B4','B5','B6','T8 Recharge','Polestar','R-Design','Inscription'],'XC90':['B5','B6','T8 Recharge','R-Design','Inscription','Excellence'],'S60':['B4','B5','T8 Recharge','Polestar Engineered','R-Design'],'V90':['B4','B5','Cross Country','B6 Cross Country']} },
+};
+
+const ALL_MARCAS = Object.keys(CAR_DATA).sort();
+
+function getModelsForMarca(marca){
+  const key = Object.keys(CAR_DATA).find(k=>k.toLowerCase()===marca.toLowerCase());
+  return key ? CAR_DATA[key].models || [] : [];
+}
+
+function getVariantsForModel(marca, modelo){
+  const key = Object.keys(CAR_DATA).find(k=>k.toLowerCase()===marca.toLowerCase());
+  if(!key) return [];
+  return CAR_DATA[key].variants?.[modelo] || [];
+}
+
+let ssFocusIdx = {marca:-1, modelo:-1};
+
+function openSS(field){
+  filterSS(field);
+}
+
+function filterSS(field){
+  const input = document.getElementById('s-'+field);
+  const drop = document.getElementById('ss-'+field+'-drop');
+  if(!input||!drop) return;
+  const val = input.value.toLowerCase().trim();
+  let options = field==='marca' ? ALL_MARCAS : getModelosForMarca();
+  const filtered = val ? options.filter(o=>o.toLowerCase().includes(val)) : options;
+  if(!filtered.length){
+    drop.innerHTML = '<div class="ss-option no-results">Sem resultados</div>';
+  } else {
+    drop.innerHTML = filtered.map((o,i)=>{
+      const esc = val ? o.replace(new RegExp('('+val.replace(/[.*+?^${}()|[\]]/g,'\\$&')+')','gi'),'<strong>$1</strong>') : o;
+      return '<div class="ss-option" data-val="'+o+'" onmousedown="selectSS(\''+field+'\',\''+o.replace(/'/g,"\\'")+'\')">'+esc+'</div>';
+    }).join('');
+  }
+  drop.classList.remove('hidden');
+  ssFocusIdx[field] = -1;
+}
+
+function selectSS(field, val){
+  const input = document.getElementById('s-'+field);
+  if(input) input.value = val;
+  document.getElementById('ss-'+field+'-drop')?.classList.add('hidden');
+  if(field==='marca'){
+    const modeloInput = document.getElementById('s-modelo');
+    if(modeloInput){
+      modeloInput.disabled = false;
+      modeloInput.placeholder = 'Escreve para filtrar...';
+      modeloInput.value = '';
+    }
+    document.getElementById('ss-modelo-drop')?.classList.add('hidden');
+    const subInput = document.getElementById('s-submodelo');
+    if(subInput){ subInput.value=''; subInput.placeholder='ex: Competition, GT3, 4S...'; }
+  }
+  if(field==='modelo'){
+    const marca = document.getElementById('s-marca')?.value||'';
+    const variants = getVariantsForModel(marca, val);
+    const subInput = document.getElementById('s-submodelo');
+    if(subInput && variants.length){
+      subInput.placeholder = variants.slice(0,4).join(', ')+'...';
+    }
+  }
+}
+
+function getModelosForMarca(){
+  const marca = document.getElementById('s-marca')?.value||'';
+  return getModelsForMarca(marca);
+}
+
+function navSS(e, field){
+  const drop = document.getElementById('ss-'+field+'-drop');
+  if(!drop||drop.classList.contains('hidden')) return;
+  const opts = drop.querySelectorAll('.ss-option:not(.no-results)');
+  if(!opts.length) return;
+  if(e.key==='ArrowDown'){ e.preventDefault(); ssFocusIdx[field]=Math.min(ssFocusIdx[field]+1,opts.length-1); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); ssFocusIdx[field]=Math.max(ssFocusIdx[field]-1,0); }
+  else if(e.key==='Enter'){ e.preventDefault(); const f=drop.querySelector('.ss-option.focused'); if(f) f.dispatchEvent(new MouseEvent('mousedown')); return; }
+  else if(e.key==='Escape'){ drop.classList.add('hidden'); return; }
+  opts.forEach((o,i)=>{ o.classList.toggle('focused',i===ssFocusIdx[field]); if(i===ssFocusIdx[field]) o.scrollIntoView({block:'nearest'}); });
+}
+
+document.addEventListener('click', e=>{
+  if(!e.target.closest('#ss-marca')) document.getElementById('ss-marca-drop')?.classList.add('hidden');
+  if(!e.target.closest('#ss-modelo')) document.getElementById('ss-modelo-drop')?.classList.add('hidden');
+});
+
+// ══════════════════════════════════════════════
+// APIFY INTEGRATION
+// ══════════════════════════════════════════════
+const APIFY_ACTORS = {
+  as24: 'automation-lab/autoscout24-scraper',
+  mde: '3x1t/mobile-de-scraper',
+  sv:  'misceres/standvirtual-scraper'
+};function buildAS24Input(filters){
+  // ivanvs/autoscout-scraper uses urls[] array
+  const url = buildAS24SearchURL(filters);
+  return {
+    urls: [{ url: url }],
+    maxConcurrency: 5,
+  };
+}
+
+function buildAS24SearchURL(filters){
+  // AS24 URL — model slugs: 911→991, M3→m3, etc.
+  const AS24_MAKE_SLUGS = {
+    'Alfa Romeo':'alfa-romeo','Aston Martin':'aston-martin','Audi':'audi',
+    'Bentley':'bentley','BMW':'bmw','Chevrolet':'chevrolet','Citroën':'citroen',
+    'Cupra':'cupra','Dodge':'dodge','Ferrari':'ferrari','Fiat':'fiat',
+    'Ford':'ford','Honda':'honda','Hyundai':'hyundai','Jaguar':'jaguar',
+    'Jeep':'jeep','Kia':'kia','Lamborghini':'lamborghini','Land Rover':'land-rover',
+    'Lexus':'lexus','Maserati':'maserati','Mazda':'mazda','McLaren':'mclaren',
+    'Mercedes-Benz':'mercedes-benz','Mini':'mini','Mitsubishi':'mitsubishi',
+    'Nissan':'nissan','Opel':'opel','Peugeot':'peugeot','Porsche':'porsche',
+    'Renault':'renault','Rolls-Royce':'rolls-royce','Seat':'seat','Skoda':'skoda',
+    'Subaru':'subaru','Tesla':'tesla','Toyota':'toyota','Volkswagen':'volkswagen','Volvo':'volvo',
+  };
+  const AS24_MODEL_SLUGS = {
+    'BMW':{'M2':'m2','M3':'m3','M4':'m4','M5':'m5','M6':'m6','M8':'m8','X1':'x1','X2':'x2','X3':'x3','X4':'x4','X5':'x5','X6':'x6','X7':'x7','XM':'xm','i3':'i3','i4':'i4','i5':'i5','i7':'i7','iX':'ix','Z4':'z4','1 Series':'1er','2 Series':'2er','3 Series':'3er','4 Series':'4er','5 Series':'5er','6 Series':'6er','7 Series':'7er','8 Series':'8er'},
+    'Porsche':{'911':'991','Cayenne':'cayenne','Macan':'macan','Panamera':'panamera','Taycan':'taycan','718 Cayman':'718-cayman','718 Boxster':'718-boxster'},
+    'Mercedes-Benz':{'A-Class':'a-klasse','B-Class':'b-klasse','C-Class':'c-klasse','CLA':'cla','CLS':'cls','E-Class':'e-klasse','G-Class':'g-klasse','GLA':'gla','GLB':'glb','GLC':'glc','GLE':'gle','GLS':'gls','S-Class':'s-klasse','SL':'sl','AMG GT':'amg-gt','EQA':'eqa','EQB':'eqb','EQC':'eqc','EQE':'eqe','EQS':'eqs'},
+    'Audi':{'A1':'a1','A2':'a2','A3':'a3','A4':'a4','A5':'a5','A6':'a6','A7':'a7','A8':'a8','Q2':'q2','Q3':'q3','Q4 e-tron':'q4-e-tron','Q5':'q5','Q7':'q7','Q8':'q8','R8':'r8','RS3':'rs3','RS4':'rs4','RS5':'rs5','RS6':'rs6','RS7':'rs7','S3':'s3','S4':'s4','S5':'s5','TT':'tt','TT RS':'tt-rs','e-tron':'e-tron','e-tron GT':'e-tron-gt'},
+    'Ferrari':{'296 GTB':'296-gtb','296 GTS':'296-gts','458':'458','488':'488','812':'812','F8':'f8','Portofino':'portofino','Purosangue':'purosangue','Roma':'roma','SF90':'sf90','California':'california'},
+    'Lamborghini':{'Aventador':'aventador','Huracan':'huracan','Urus':'urus'},
+    'McLaren':{'540C':'540c','570S':'570s','600LT':'600lt','650S':'650s','675LT':'675lt','720S':'720s','750S':'750s','765LT':'765lt','Artura':'artura'},
+    'Land Rover':{'Defender':'defender','Discovery':'discovery','Discovery Sport':'discovery-sport','Range Rover':'range-rover','Range Rover Evoque':'range-rover-evoque','Range Rover Sport':'range-rover-sport','Range Rover Velar':'range-rover-velar'},
+    'Volkswagen':{'Golf':'golf','Passat':'passat','Polo':'polo','Tiguan':'tiguan','Touareg':'touareg','ID.3':'id.3','ID.4':'id.4','ID.5':'id.5','Arteon':'arteon'},
+  };
+
+  const makeSlug = AS24_MAKE_SLUGS[filters.marca] || (filters.marca||'').toLowerCase().replace(/ /g,'-');
+  const modelMap = AS24_MODEL_SLUGS[filters.marca] || {};
+  const modelSlug = modelMap[filters.modelo] || (filters.modelo||'').toLowerCase().replace(/ /g,'-');
+
+  let path = 'https://www.autoscout24.com/lst';
+  if(makeSlug) path += '/'+makeSlug;
+  if(modelSlug) path += '/'+modelSlug;
+
+  const p = new URLSearchParams();
+  p.set('atype','C');
+  p.set('ustate','N,U');
+  p.set('sort','standard');
+  p.set('desc','0');
+  // Countries
+  const cy = filters.pais || 'D,A,B,E,F,I,L,NL';
+  p.set('cy', cy);
+  if(filters.anoMin) p.set('fregfrom', filters.anoMin);
+  if(filters.anoMax) p.set('fregto', filters.anoMax);
+  if(filters.kmMin) p.set('kmfrom', filters.kmMin);
+  if(filters.kmMax) p.set('kmto', filters.kmMax);
+  if(filters.precoMin) p.set('pricefrom', filters.precoMin);
+  if(filters.precoMax) p.set('priceto', filters.precoMax);
+  if(filters.comb){
+    const m={'gasoline':'B','diesel':'D','electric':'E','hybrid':'2','phev':'3','mild-hybrid':'M'};
+    if(m[filters.comb]) p.set('fuel', m[filters.comb]);
+  }
+  if(filters.carrocaria){
+    // AS24 body codes from real URL: coupe=3, suv=1, sedan=2, estate=5, cabrio=4, minivan=6
+    const b={'suv':'1','sedan':'2','coupe':'3','cabrio':'4','estate':'5','minivan':'6'};
+    if(b[filters.carrocaria]) p.set('body', b[filters.carrocaria]);
+  }
+  if(filters.submodelo) p.set('version0', filters.submodelo.toLowerCase().replace(/ /g,'-'));
+  return path+'?'+p.toString();
+}
+
+
+
+// Mobile.de IDs — confirmed from real URLs
+// ms= format: MAKE;FIELD2;FIELD3;SUBMODEL
+// BMW/Audi/VW/etc use field2: ms=MAKE;MODEL;;
+// Porsche/Mercedes use field3: ms=MAKE;;MODEL;
+const MDE_MAKE_IDS = {
+  // All IDs confirmed from real Mobile.de URLs
+  'Aston Martin':1700,'Audi':1900,'Bentley':3100,'BMW':3500,
+  'Ferrari':8600,'Ford':9000,'Honda':11000,'Hyundai':11600,
+  'Jaguar':12400,'Kia':13200,'Lamborghini':14600,'Land Rover':14800,
+  'Lexus':15200,'Maserati':16600,'McLaren':137,'Mercedes-Benz':17200,
+  'Nissan':18700,'Porsche':20100,'Rolls-Royce':21600,
+  'Toyota':24100,'Volkswagen':25200,'Volvo':25100,
+  // Unconfirmed — may need correction
+  'Alfa Romeo':1350,'Citroën':4800,'Dodge':5900,'Fiat':6400,
+  'Jeep':9200,'Mazda':10800,'Mini':15900,'Mitsubishi':11000,
+  'Opel':11300,'Peugeot':11600,'Renault':12600,'Seat':13400,
+  'Skoda':13600,'Subaru':13900,'Tesla':23900,
+};
+
+// Which field the model ID goes in per make:
+// field2 = ms=MAKE;MODEL;; (BMW, Audi, VW, most makes)
+// field3 = ms=MAKE;;MODEL; (Porsche, Mercedes-Benz)
+const MDE_MODEL_FIELD = {
+  'Porsche': 3,
+  'Mercedes-Benz': 3,
+};
+
+// Model IDs — dynamically loaded from Mobile.de refdata API
+// Fallback static values for confirmed models
+const MDE_MODEL_IDS = {
+  '3500': {'M3':45,'M4':93,'M5':46,'M6':47,'M8':100,'X1':89,'X2':164,'X3':150,'X4':158,'X5':49,'X6':60,'X7':169,'i4':193,'i5':200,'i7':198,'iX':195,'Z4':67,'1 Series':1,'2 Series':2,'3 Series':3,'4 Series':4,'5 Series':5,'6 Series':6,'7 Series':7,'8 Series':8},
+  '20100': {'911':40,'Cayenne':18,'Panamera':4,'Macan':22,'Taycan':30,'718 Boxster':38,'718 Cayman':39},
+  '17200': {'C-Class':6,'E-Class':11,'G-Class':12,'GLC':59,'GLE':60,'GLS':61,'S-Class':16,'A-Class':1,'B-Class':2,'CLA':13,'CLS':14,'AMG GT':58,'SL':17,'EQA':93,'EQB':94,'EQC':73,'EQE':95,'EQS':96},
+  '1900': {'A1':1,'A2':2,'A3':3,'A4':4,'A5':5,'A6':6,'A7':7,'A8':8,'Q2':91,'Q3':26,'Q4 e-tron':106,'Q5':27,'Q7':28,'Q8':96,'R8':29,'RS3':73,'RS4':74,'RS5':75,'RS6':76,'RS7':77,'TT':32,'e-tron':104,'e-tron GT':105},
+};
+
+// Cache for MDE AI search results
+const MDE_AI_CACHE = {};
+
+function getMDEMakeId(marca){
+  return MDE_MAKE_IDS[marca] || null;
+}
+
+function getMDEModelId(makeId, modelo){
+  const models = MDE_MODEL_IDS[String(makeId)];
+  return models ? (models[modelo] || null) : null;
+}
+
+function getMDEModelField(marca){
+  return MDE_MODEL_FIELD[marca] || 2; // default field 2
+}
+
+async function buildMDESearchURL(filters){
+  const makeId = getMDEMakeId(filters.marca);
+  const p = new URLSearchParams();
+  p.set('s','Car'); p.set('vc','Car'); p.set('dam','false');
+  p.set('isSearchRequest','true'); p.set('sb','rel'); p.set('ref','dsp');
+
+  if(makeId){
+    // Check static confirmed model IDs first
+    const staticModels = MDE_MODEL_IDS[String(makeId)];
+    let modelId = staticModels?.[filters.modelo] ?? null;
+
+    // If not in static table, ask Mobile.de AI search
+    if(!modelId && filters.modelo){
+      const cacheKey = (filters.marca+' '+filters.modelo).toLowerCase();
+      if(!MDE_AI_CACHE[cacheKey]){
+        try{
+          const q = encodeURIComponent(filters.marca+' '+filters.modelo);
+          const resp = await fetch('https://suchen.mobile.de/fahrzeuge/search.html?isSearchRequest=true&s=Car&vc=Car&dam=false&ref=homeAISearch&q='+q, {redirect:'follow'});
+          const msMatch = resp.url.match(/ms=([^&]+)/);
+          if(msMatch) MDE_AI_CACHE[cacheKey] = decodeURIComponent(msMatch[1]);
+        } catch(e){ console.warn('MDE AI search failed:', e.message); }
+      }
+      // If AI gave us a full ms= value, use it directly
+      if(MDE_AI_CACHE[cacheKey]){
+        const sub = filters.submodelo ? filters.submodelo.toLowerCase().replace(/ /g,'-') : '';
+        let ms = MDE_AI_CACHE[cacheKey];
+        if(sub) ms = ms.replace(/;$/, ';'+sub);
+        p.set('ms', ms);
+        // Add other filters and return
+        if(filters.anoMin) p.set('fr', filters.anoMin);
+        if(filters.anoMax) p.set('t', filters.anoMax);
+        if(filters.kmMax) p.set('ml', '0:'+filters.kmMax);
+        if(filters.precoMin) p.set('p', filters.precoMin);
+        if(filters.precoMax) p.set('pe', filters.precoMax);
+        if(filters.potMin) p.set('pw', filters.potMin+':');
+        if(filters.comb){ const m={'gasoline':'PETROL','diesel':'DIESEL','electric':'ELECTRIC','hybrid':'HYBRID_PETROL','phev':'PLUG_IN_HYBRID','mild-hybrid':'MILD_HYBRID'}; if(m[filters.comb]) p.set('ft',m[filters.comb]); }
+        if(filters.carrocaria){ const b={'suv':'OffRoad','sedan':'Limousine','estate':'EstateCar','coupe':'SportsCar','cabrio':'Cabrio','minivan':'Van'}; if(b[filters.carrocaria]) p.set('c',b[filters.carrocaria]); }
+        return 'https://suchen.mobile.de/fahrzeuge/search.html?'+p.toString();
+      }
+    }
+
+    // Build ms= from static IDs
+    const sub = filters.submodelo ? filters.submodelo.toLowerCase().replace(/ /g,'-') : '';
+    const field = getMDEModelField(filters.marca);
+    let ms;
+    if(field === 3) ms = makeId+';'+(modelId?';'+modelId:';;')+(sub?';'+sub:';');
+    else ms = makeId+';'+(modelId||'')+';;'+(sub||'');
+    p.set('ms', ms);
+  }
+
+  if(filters.anoMin) p.set('fr', filters.anoMin);
+  if(filters.anoMax) p.set('t', filters.anoMax);
+  if(filters.kmMax) p.set('ml', '0:'+filters.kmMax);
+  if(filters.precoMin) p.set('p', filters.precoMin);
+  if(filters.precoMax) p.set('pe', filters.precoMax);
+  if(filters.potMin) p.set('pw', filters.potMin+':');
+  if(filters.comb){ const m={'gasoline':'PETROL','diesel':'DIESEL','electric':'ELECTRIC','hybrid':'HYBRID_PETROL','phev':'PLUG_IN_HYBRID','mild-hybrid':'MILD_HYBRID'}; if(m[filters.comb]) p.set('ft',m[filters.comb]); }
+  if(filters.carrocaria){ const b={'suv':'OffRoad','sedan':'Limousine','estate':'EstateCar','coupe':'SportsCar','cabrio':'Cabrio','minivan':'Van'}; if(b[filters.carrocaria]) p.set('c',b[filters.carrocaria]); }
+  return 'https://suchen.mobile.de/fahrzeuge/search.html?'+p.toString();
+}
+
+async function buildMDEInput(filters){
+  const url = await buildMDESearchURL(filters);
+  return {
+    urls: [url],
+    maxRecords: parseInt(filters.max)||100,
+  };
+}
+
+// ══════════════════════════════════════════════
+// API KEY MANAGEMENT
+// ══════════════════════════════════════════════
+function getApiKey(){ return localStorage.getItem('ai_api_key')||''; }
+
+function saveApiKey(key){
+  key=(key||'').trim();
+  if(!key){ alert('Insere uma API key válida.'); return; }
+  if(!key.startsWith('sk-ant-')){ alert('A key deve começar com sk-ant-...'); return; }
+  localStorage.setItem('ai_api_key',key);
+  const input=document.getElementById('api-key-input');
+  if(input) input.value=key;
+  const status=document.getElementById('api-key-status');
+  if(status){ status.textContent='✓ API key guardada'; status.style.color='var(--green)'; }
+}
+
+function toggleApiKeyVisibility(){
+  const input=document.getElementById('api-key-input');
+  if(!input) return;
+  input.type=input.type==='password'?'text':'password';
+}
+
+function checkApiKey(){
+  const key=getApiKey();
+  if(!key){
+    alert('⚠️ Sem API key configurada.\n\nVai a Configurações e insere a tua API key da Anthropic.');
+    goView('config');
+    return false;
+  }
+  return true;
+}
+
+function getApifyKey(){ return localStorage.getItem('ai_apify_key')||''; }
+
+function getBraveKey(){ return localStorage.getItem('ai_brave_key')||''; }
+
+function saveBraveKey(key){
+  key=(key||'').trim();
+  if(!key){ alert('Insere uma API key do Brave válida.'); return; }
+  localStorage.setItem('ai_brave_key',key);
+  const input=document.getElementById('brave-key-input');
+  if(input) input.value=key;
+  const status=document.getElementById('brave-key-status');
+  if(status){ status.textContent='✓ API key Brave guardada'; status.style.color='var(--green)'; }
+}
+
+function saveApifyKey(key){
+  key=(key||'').trim();
+  if(!key){ alert('Insere uma API key do Apify válida.'); return; }
+  localStorage.setItem('ai_apify_key',key);
+  const input=document.getElementById('apify-key-input');
+  if(input) input.value=key;
+  const status=document.getElementById('apify-key-status');
+  if(status){ status.textContent='✓ API key Apify guardada'; status.style.color='var(--green)'; }
+}
+
+function setInputMode(mode){
+  const searchDiv=document.getElementById('mode-search');
+  const uploadDiv=document.getElementById('mode-upload');
+  const btnSearch=document.getElementById('btn-mode-search');
+  const btnUpload=document.getElementById('btn-mode-upload');
+  if(!searchDiv||!uploadDiv) return;
+  if(mode==='search'){
+    searchDiv.classList.remove('hidden'); uploadDiv.classList.add('hidden');
+    if(btnSearch){ btnSearch.style.background='var(--accent)'; btnSearch.style.color='#fff'; btnSearch.style.border='none'; }
+    if(btnUpload){ btnUpload.style.background='var(--surface)'; btnUpload.style.color='var(--ink2)'; btnUpload.style.border='1px solid var(--border)'; }
+    if(!getApifyKey()) document.getElementById('apify-key-warning')?.classList.remove('hidden');
+    else document.getElementById('apify-key-warning')?.classList.add('hidden');
+  } else {
+    uploadDiv.classList.remove('hidden'); searchDiv.classList.add('hidden');
+    if(btnUpload){ btnUpload.style.background='var(--accent)'; btnUpload.style.color='#fff'; btnUpload.style.border='none'; }
+    if(btnSearch){ btnSearch.style.background='var(--surface)'; btnSearch.style.color='var(--ink2)'; btnSearch.style.border='1px solid var(--border)'; }
+  }
+}
+
+async function runApifyActor(actorId, input, maxItems){
+  const apiKey=getApifyKey();
+  if(!apiKey) throw new Error('API key do Apify não configurada');
+  const runUrl='https://api.apify.com/v2/acts/'+encodeURIComponent(actorId)+'/run-sync-get-dataset-items?token='+apiKey+'&maxItems='+maxItems+'&format=json';
+  const resp=await fetch(runUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)});
+  if(!resp.ok){ const err=await resp.json().catch(()=>({})); throw new Error('Apify erro '+resp.status+': '+(err.error?.message||'Unknown')); }
+  return await resp.json();
+}
+
+function getSearchFilters(){
+  return {
+    marca:document.getElementById('s-marca')?.value?.trim()||'',
+    modelo:document.getElementById('s-modelo')?.value?.trim()||'',
+    submodelo:document.getElementById('s-submodelo')?.value?.trim()||'',
+    carrocaria:document.getElementById('s-carrocaria')?.value||'',
+    anoMin:document.getElementById('s-ano-min')?.value||'',
+    anoMax:document.getElementById('s-ano-max')?.value||'',
+    kmMax:document.getElementById('s-km-max')?.value||'',
+    precoMin:document.getElementById('s-preco-min')?.value||'',
+    precoMax:document.getElementById('s-preco-max')?.value||'',
+    potMin:document.getElementById('s-pot-min')?.value||'',
+    comb:document.getElementById('s-comb')?.value||'',
+    pais:document.getElementById('s-pais')?.value||'',
+    max:document.getElementById('s-max')?.value||'100',
+    srcAS24:document.getElementById('s-src-as24')?.checked,
+    srcMDE:document.getElementById('s-src-mde')?.checked,
+  };
+}
+
+async function previewSearchURLs(){
+  const filters=getSearchFilters();
+  const preview=document.getElementById('search-url-preview');
+  if(!filters.marca){ alert('Preenche pelo menos a Marca.'); return; }
+  if(preview) preview.classList.remove('hidden');
+  if(filters.srcAS24){
+    const url=buildAS24SearchURL(filters);
+    document.getElementById('preview-as24')?.classList.remove('hidden');
+    const el=document.getElementById('preview-as24-url');
+    if(el){ el.textContent=url; el.onclick=()=>window.open(url,'_blank'); el.style.cursor='pointer'; el.style.textDecoration='underline'; }
+  }
+  if(filters.srcMDE){
+    const url=await buildMDESearchURL(filters);
+    document.getElementById('preview-mde')?.classList.remove('hidden');
+    const el=document.getElementById('preview-mde-url');
+    if(el){ el.textContent=url; el.onclick=()=>window.open(url,'_blank'); el.style.cursor='pointer'; el.style.textDecoration='underline'; }
+  }
+}
+
+async function runApifySearch(){
+  const filters=getSearchFilters();
+  if(!filters.marca){ alert('Preenche pelo menos a Marca.'); return; }
+  if(!getApifyKey()){ alert('API key do Apify não configurada. Vai a Configurações.'); goView('config'); return; }
+  if(!filters.srcAS24&&!filters.srcMDE){ alert('Selecciona pelo menos uma fonte (AS24 ou Mobile.de).'); return; }
+  const btn=document.getElementById('btn-search');
+  const prog=document.getElementById('search-progress');
+  const status=document.getElementById('search-status');
+  btn.disabled=true; btn.textContent='⏳ A pesquisar...';
+  window._lastSearchFilters=filters;
+  const runs=[];
+  if(filters.srcAS24) runs.push({src:'as24',label:'AutoScout24',actor:APIFY_ACTORS.as24,input:buildAS24Input(filters)});
+  // MDE is now URL-based in step 2
+  let totalFound=0;
+  for(const run of runs){
+    if(prog) prog.textContent='A pesquisar '+run.label+'...';
+    try{
+      const rows=await runApifyActor(run.actor,run.input,parseInt(filters.max));
+      const tagged=rows.map(r=>({...r,_src:run.src}));
+      if(run.src==='as24'){
+        files.as24={rows:tagged,name:filters.marca+' '+filters.modelo+' (AS24)'};
+        document.getElementById('pill-as24')?.classList.remove('hidden');
+        const el=document.getElementById('pill-as24-name');
+        if(el) el.textContent=filters.marca+' '+filters.modelo+' AS24 ('+rows.length+')';
+      } else {
+        files.mde={rows:tagged,name:filters.marca+' '+filters.modelo+' (MDE)'};
+        document.getElementById('pill-mde')?.classList.remove('hidden');
+        const el=document.getElementById('pill-mde-name');
+        if(el) el.textContent=filters.marca+' '+filters.modelo+' MDE ('+rows.length+')';
+      }
+      totalFound+=rows.length;
+      if(prog) prog.textContent='✓ '+run.label+': '+rows.length+' anúncios';
+    }catch(e){
+      if(prog) prog.textContent='⚠️ '+run.label+': '+e.message;
+      await sleep(1000);
+    }
+  }
+  btn.disabled=false; btn.textContent='🔍 Pesquisar';
+  if(files.as24||files.mde){
+    updateStep1();
+    if(status){
+      status.className='alert alert-green';
+      status.classList.remove('hidden');
+      const as24txt=filters.srcAS24&&files.as24?'AS24: '+files.as24.rows.length:'';
+      const mdetxt=filters.srcMDE&&files.mde?' · MDE: '+files.mde.rows.length:'';
+      status.innerHTML='✓ <strong>'+totalFound+' anúncios encontrados</strong> — '+as24txt+mdetxt+'<br><button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="goStep(2)">Continuar →</button>';
+    }
+  } else {
+    if(status){ status.className='alert alert-warn'; status.classList.remove('hidden'); status.textContent='⚠️ Nenhum resultado encontrado. Verifica os filtros.'; }
+    if(prog) prog.textContent='';
+  }
+}
+
+function setAS24Mode(mode){
+  const filtersSection = document.querySelector('.as24-filters-section');
+  const urlSection = document.getElementById('as24-url-section');
+  const btnFilters = document.getElementById('as24-mode-filters');
+  const btnUrl = document.getElementById('as24-mode-url');
+  if(mode==='url'){
+    if(filtersSection) filtersSection.style.display='none';
+    urlSection?.classList.remove('hidden');
+    if(btnUrl){ btnUrl.style.background='var(--accent)'; btnUrl.style.color='#fff'; btnUrl.style.borderColor='var(--accent)'; }
+    if(btnFilters){ btnFilters.style.background='var(--surface)'; btnFilters.style.color='var(--ink2)'; btnFilters.style.borderColor='var(--border)'; }
+  } else {
+    if(filtersSection) filtersSection.style.display='';
+    urlSection?.classList.add('hidden');
+    if(btnFilters){ btnFilters.style.background='var(--accent)'; btnFilters.style.color='#fff'; btnFilters.style.borderColor='var(--accent)'; }
+    if(btnUrl){ btnUrl.style.background='var(--surface)'; btnUrl.style.color='var(--ink2)'; btnUrl.style.borderColor='var(--border)'; }
+  }
+}
+
+function updateAS24UrlStatus(){
+  const input = document.getElementById('as24-url-input');
+  const btn = document.getElementById('btn-as24-url-fetch');
+  const val = (input?.value||'').trim();
+  const valid = val.includes('autoscout24.com');
+  if(btn) btn.disabled = !valid;
+  const status = document.getElementById('as24-url-status');
+  if(status) status.textContent = valid ? '' : val ? '⚠️ URL inválido — deve ser do autoscout24.com' : '';
+}
+
+async function fetchAS24FromUrl(){
+  const input = document.getElementById('as24-url-input');
+  const url = (input?.value||'').trim();
+  if(!url || !url.includes('autoscout24.com')) return;
+  if(!getApifyKey()){ alert('API key do Apify não configurada.'); goView('config'); return; }
+  const btn = document.getElementById('btn-as24-url-fetch');
+  const status = document.getElementById('as24-url-status');
+  btn.disabled=true; btn.textContent='⏳ A pesquisar...';
+  if(status) status.textContent='A pesquisar no AutoScout24...';
+  try{
+    const maxItems = parseInt(document.getElementById('s-max')?.value||'100');
+    const rows = await runApifyActor(APIFY_ACTORS.as24, {urls:[{url}], maxRecords:maxItems}, maxItems);
+    const tagged = rows.map(r=>({...r,_src:'as24'}));
+    files.as24 = {rows:tagged, name:'AutoScout24 ('+rows.length+')'};
+    document.getElementById('pill-as24')?.classList.remove('hidden');
+    const pill = document.getElementById('pill-as24-name');
+    if(pill) pill.textContent='AutoScout24 ('+rows.length+')';
+    updateStep1();
+    if(status){ status.textContent='✓ '+rows.length+' anúncios encontrados'; status.style.color='var(--green)'; }
+  } catch(e){
+    if(status){ status.textContent='⚠️ Erro: '+e.message; status.style.color='var(--accent)'; }
+  } finally { btn.disabled=false; btn.textContent='Pesquisar'; }
+}
+
+// ══════════════════════════════════════════════
+// SYNC — server integration
+// ══════════════════════════════════════════════
+function getServerUrl(){ return localStorage.getItem('ai_server_url')||''; }
+
+function saveServerUrl(url){
+  localStorage.setItem('ai_server_url', url.trim());
+}
+
+function showSyncSettings(analysis){
+  const container = document.getElementById('sync-settings');
+  if(!container || !getServerUrl()) return;
+  container.classList.remove('hidden');
+  container.style.display = 'flex';
+  document.getElementById('sync-enabled').checked = analysis?.syncEnabled || false;
+  document.getElementById('sync-min-score').value  = analysis?.minScore || 7;
+  document.getElementById('sync-ntfy-channel').value = analysis?.ntfyChannel || '';
+}
+
+async function updateSyncSettings(){
+  const name = document.getElementById('analysis-name')?.value;
+  if(!name) return;
+  const analysis = analyses.find(a => a.name === name);
+  if(!analysis) return;
+
+  analysis.syncEnabled  = document.getElementById('sync-enabled')?.checked || false;
+  analysis.minScore     = parseInt(document.getElementById('sync-min-score')?.value) || 7;
+  analysis.ntfyChannel  = document.getElementById('sync-ntfy-channel')?.value?.trim() || '';
+  localStorage.setItem('ai_analyses', JSON.stringify(analyses));
+
+  // Push to server if URL configured
+  const serverUrl = getServerUrl();
+  if(!serverUrl) return;
+  try{
+    await fetch(serverUrl+'/analyses', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(analysis),
+    });
+  } catch(e){ console.warn('Server sync failed:', e.message); }
+}
+
+async function pushAnalysisToServer(analysis){
+  const serverUrl = getServerUrl();
+  if(!serverUrl || !analysis) return;
+  try{
+    await fetch(serverUrl+'/analyses', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(analysis),
+    });
+    console.log('Analysis pushed to server:', analysis.name);
+  } catch(e){ console.warn('Server push failed:', e.message); }
+}
+
+</script>
+</body>
+</html>
