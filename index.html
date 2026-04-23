@@ -788,6 +788,92 @@ let calcRows = [];
 let currentStep = 1;
 
 // ══════════════════════════════════════════════
+// CLOUD SYNC — server as source of truth
+// Falls back to localStorage if server unavailable
+// ══════════════════════════════════════════════
+
+async function cloudGet(path) {
+  const url = getServerUrl();
+  if (!url) return null;
+  try {
+    const resp = await fetch(url + path);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
+async function cloudPost(path, data) {
+  const url = getServerUrl();
+  if (!url) return false;
+  try {
+    const resp = await fetch(url + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return resp.ok;
+  } catch { return false; }
+}
+
+async function cloudDelete(path) {
+  const url = getServerUrl();
+  if (!url) return false;
+  try {
+    const resp = await fetch(url + path, { method: 'DELETE' });
+    return resp.ok;
+  } catch { return false; }
+}
+
+// Load analyses — server first, localStorage fallback
+async function loadAnalyses() {
+  const fromServer = await cloudGet('/analyses');
+  if (fromServer && Array.isArray(fromServer)) {
+    analyses = fromServer;
+    localStorage.setItem('ai_analyses', JSON.stringify(analyses));
+    return;
+  }
+  // Fallback
+  try { analyses = JSON.parse(localStorage.getItem('ai_analyses') || '[]'); }
+  catch { analyses = []; }
+}
+
+// Load favourites — server first, localStorage fallback
+async function loadFavourites() {
+  const fromServer = await cloudGet('/favourites');
+  if (fromServer && Array.isArray(fromServer)) {
+    favs = fromServer;
+    localStorage.setItem('ai_favs', JSON.stringify(favs));
+    return;
+  }
+  try { favs = JSON.parse(localStorage.getItem('ai_favs') || '[]'); }
+  catch { favs = []; }
+}
+
+// Save analysis — server + localStorage
+async function persistAnalysis(analysis) {
+  localStorage.setItem('ai_analyses', JSON.stringify(analyses));
+  await cloudPost('/analyses', analysis);
+}
+
+// Delete analysis — server + localStorage
+async function deleteAnalysis(id) {
+  await deleteAnalysis(id);
+  await cloudDelete('/analyses/' + id);
+}
+
+// Save favourite — server + localStorage
+async function persistFavourite(fav) {
+  localStorage.setItem('ai_favs', JSON.stringify(favs));
+  await cloudPost('/favourites', fav);
+}
+
+// Delete favourite — server + localStorage
+async function deleteFavourite(id) {
+  await deleteFavourite(id);
+  await cloudDelete('/favourites/' + id);
+}
+
+// ══════════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════════
 const VIEWS = {
