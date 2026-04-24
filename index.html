@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%231B3A6B"/><text x="50" y="72" font-family="sans-serif" font-weight="900" font-size="68" fill="%23D4A017" text-anchor="middle">A</text></svg>">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B3A6B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AutoImport">
+<link rel="apple-touch-icon" href="icon-192.svg">
 <title>AutoImport v0.1.5 — Plataforma de Importação</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -286,6 +293,85 @@ td.editing input{width:100%;background:#fff;border:2px solid var(--accent);color
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 
+
+/* ── TOASTS ─────────────────────────────── */
+.toast-container{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:var(--sp2);pointer-events:none;max-width:380px;}
+.toast{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r-lg);padding:var(--sp3) var(--sp4);box-shadow:0 4px 12px rgba(0,0,0,.1);font-size:12px;line-height:1.5;pointer-events:auto;animation:toastIn .25s ease-out;border-left:3px solid var(--accent);min-width:280px;}
+.toast.t-success{border-left-color:var(--green);}
+.toast.t-warn{border-left-color:var(--amber);}
+.toast.t-error{border-left-color:var(--red);}
+.toast-title{font-family:var(--syne);font-weight:600;color:var(--accent);margin-bottom:2px;font-size:13px;}
+.toast.t-success .toast-title{color:var(--green);}
+.toast.t-warn .toast-title{color:var(--amber);}
+.toast.t-error .toast-title{color:var(--red);}
+.toast-msg{color:var(--ink2);}
+@keyframes toastIn{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+@keyframes toastOut{from{transform:translateX(0);opacity:1;}to{transform:translateX(100%);opacity:0;}}
+.toast.out{animation:toastOut .2s ease-in forwards;}
+
+/* ── DARK MODE ────────────────────────── */
+body.dark{
+  --bg:#0A1628; --surface:#0F1E3C; --surface2:#152B52;
+  --border:#1E3A6B; --border2:#162E56;
+  --ink:#E6EDF7; --ink2:#B8CCE4; --ink3:#7A90B0;
+  --accent:#6FA5E5; --accent-l:#152B52;
+  --green:#5DCAA5; --green-l:#0F2318;
+  --amber:#E8B84B; --amber-l:#2B1F0A;
+  --red:#F09595; --red-l:#3A1212;
+  --blue:#6FA5E5; --blue-l:#152B52;
+  --gold:#E8B84B; --gold-l:#2B1F0A;
+}
+body.dark .sidebar{background:#061020;}
+body.dark .topbar{background:var(--surface);border-color:var(--border);}
+body.dark .card{background:var(--surface);border-color:var(--border);box-shadow:0 1px 3px rgba(0,0,0,.3);}
+body.dark .card-hdr{background:var(--surface2);border-color:var(--border2);}
+body.dark .score-badge.s-high{background:var(--green);}
+body.dark .score-badge.s-mid{background:var(--amber);}
+body.dark .score-badge.s-low{background:var(--red);}
+body.dark .toast{background:var(--surface);border-color:var(--border);color:var(--ink);}
+body.dark .fav-btn{background:rgba(15,30,60,.92);color:#fff;}
+body.dark .fav-btn.active{background:rgba(240,149,149,.3);}
+body.dark input,body.dark select,body.dark textarea{background:var(--surface);color:var(--ink);border-color:var(--border);}
+body.dark .alert-info{background:#0F2340;color:#B8CCE4;}
+body.dark .alert-warn{background:#2B1F0A;color:#E8B84B;}
+body.dark .alert-green{background:#0F2318;color:#5DCAA5;}
+body.dark .src-as24{background:#f5f500;color:#1A1714;}
+body.dark .src-mde{background:#8E3FB0;color:#fff;}
+body.dark th{background:var(--surface2);}
+body.dark .modal-overlay{background:rgba(0,0,0,.7);}
+body.dark .modal{background:var(--surface);border:0.5px solid var(--border);}
+body.dark ::-webkit-scrollbar-track{background:var(--bg);}
+body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
+
+/* Theme toggle button */
+.theme-toggle{
+  position:absolute;top:16px;right:20px;background:none;border:none;cursor:pointer;
+  font-size:14px;color:rgba(255,255,255,.5);padding:6px 10px;border-radius:var(--r);
+  transition:color .15s,background .15s;
+}
+.theme-toggle:hover{color:#fff;background:rgba(255,255,255,.08);}
+
+/* ── LOADING SKELETONS ─────────────────── */
+.skel{
+  background:linear-gradient(90deg, var(--surface2) 0%, var(--border2) 50%, var(--surface2) 100%);
+  background-size:200% 100%;
+  animation:skeletonShimmer 1.4s ease-in-out infinite;
+  border-radius:var(--r);
+}
+@keyframes skeletonShimmer{
+  0%{background-position:200% 0;}
+  100%{background-position:-200% 0;}
+}
+.skel-card{
+  background:var(--surface);
+  border:0.5px solid var(--border);
+  border-radius:var(--r-lg);
+  padding:var(--sp4);
+  margin-bottom:var(--sp3);
+}
+.skel-img{height:160px;margin:-var(--sp4) -var(--sp4) var(--sp3) -var(--sp4);border-radius:var(--r-lg) var(--r-lg) 0 0;}
+.skel-line{height:12px;margin-bottom:6px;}
+.skel-line-sm{height:9px;width:60%;}
 </style>
 </head>
 <body>
@@ -320,9 +406,11 @@ td.editing input{width:100%;background:#fff;border:2px solid var(--accent);color
   </div>
 </div>
 
+<div class="toast-container" id="toast-container"></div>
 <div class="app">
 <aside class="sidebar" id="sidebar">
-  <div class="sidebar-logo">
+  <div class="sidebar-logo" style="position:relative;">
+    <button class="theme-toggle" onclick="toggleTheme()" title="Tema">🌓</button>
     <div class="logo-mark">Auto<span>Import</span></div>
     <div class="logo-sub">Plataforma de Importação</div>
   </div>
@@ -335,6 +423,7 @@ td.editing input{width:100%;background:#fff;border:2px solid var(--accent);color
     <div class="nav-label" style="margin-top:8px;">Sistema</div>
     <button class="nav-item" id="nav-notif" onclick="goView('notificacoes')"><span class="nav-icon">🔔</span>Notificações<span class="nav-badge hidden" id="notif-badge" style="background:#B91C1C;">0</span></button>
     <button class="nav-item" onclick="goView('config')"><span class="nav-icon">⚙</span>Configurações</button>
+    <button class="nav-item" onclick="goView('sobre')"><span class="nav-icon">ⓘ</span>Sobre</button>
   </nav>
   <div class="sidebar-footer">v0.1.5 · ISV AT 2026 · 3 Fontes</div>
 </aside>
@@ -606,7 +695,39 @@ td.editing input{width:100%;background:#fff;border:2px solid var(--accent);color
           </div>
         </div>
         <div id="car-grid-wrap" style="border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r) var(--r);padding:14px;background:var(--surface);margin-bottom:16px;">
-          <div class="car-grid" id="car-grid"></div>
+          <div id="filter-bar" style="background:var(--surface);border:0.5px solid var(--border);border-top:none;padding:var(--sp3) var(--sp4);display:flex;gap:var(--sp3);flex-wrap:wrap;align-items:center;font-size:11px;">
+            <span style="color:var(--ink3);font-weight:600;">Filtros:</span>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="checkbox" id="f-score-high" onchange="renderResults()" style="accent-color:var(--accent);">
+              Score ≥8
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="checkbox" id="f-marg-pos" onchange="renderResults()" style="accent-color:var(--accent);">
+              Margem &gt; 0
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="checkbox" id="f-marg-5k" onchange="renderResults()" style="accent-color:var(--accent);">
+              Margem ≥ 5.000€
+            </label>
+            <select id="f-comb" onchange="renderResults()" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);color:var(--ink);">
+              <option value="">Todos combustíveis</option>
+              <option value="Gasolina">Gasolina</option>
+              <option value="Gasóleo">Gasóleo</option>
+              <option value="Elétrico">Elétrico</option>
+              <option value="PHEV">PHEV</option>
+              <option value="Híbrido Mild">Híbrido Mild</option>
+            </select>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="checkbox" id="f-has-notes" onchange="renderResults()" style="accent-color:var(--accent);">
+              Com as minhas notas
+            </label>
+            <button class="btn btn-ghost btn-sm" onclick="clearFilters()" style="font-size:10px;">✕ Limpar filtros</button>
+            <div style="margin-left:auto;display:flex;gap:var(--sp2);">
+              <button class="btn btn-ghost btn-sm" onclick="favAllFiltered()" style="font-size:10px;" title="Marcar todos os visíveis como favoritos">♡ Favoritar todos</button>
+              <button class="btn btn-ghost btn-sm" onclick="eliminarBaixaPontuacao()" style="font-size:10px;color:var(--red);" title="Eliminar carros com score abaixo de 5">✕ Eliminar score &lt;5</button>
+            </div>
+          </div>
+          <div class="car-grid" id="car-grid" style="border:0.5px solid var(--border);border-top:none;border-radius:0 0 var(--r-lg) var(--r-lg);padding:var(--sp4);"></div>
         </div>
 
         <!-- Eliminados -->
@@ -789,6 +910,84 @@ td.editing input{width:100%;background:#fff;border:2px solid var(--accent);color
             </div>
           </div>
         </div>
+
+    <div class="view" id="view-sobre">
+      <div class="topbar">
+        <div><div class="page-title">Sobre</div><div class="page-sub">Informação · Privacidade · Changelog</div></div>
+      </div>
+      <div class="content" style="max-width:800px;">
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">📄 Privacidade e Dados</div></div>
+          <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
+            <p style="margin-bottom:12px;"><strong style="color:var(--ink);">Onde ficam os teus dados:</strong></p>
+            <ul style="margin-left:20px;margin-bottom:16px;">
+              <li style="margin-bottom:6px;"><strong>API Keys</strong> (Anthropic, Apify, Brave) — <em>localStorage do teu browser</em>, nunca enviadas a servidores terceiros.</li>
+              <li style="margin-bottom:6px;"><strong>Análises e favoritos</strong> — <em>localStorage do teu browser</em>.</li>
+              <li style="margin-bottom:6px;"><strong>Metadados das análises</strong> (nome, data, URLs de pesquisa) — enviados ao servidor Railway quando guardas ou activas sync. Os dados dos carros individuais ficam apenas no browser.</li>
+              <li style="margin-bottom:6px;"><strong>Notificações</strong> — guardadas 7 dias no servidor Railway, partilhadas entre os teus dispositivos.</li>
+            </ul>
+            <p style="margin-bottom:12px;"><strong style="color:var(--ink);">Serviços externos usados:</strong></p>
+            <ul style="margin-left:20px;">
+              <li style="margin-bottom:4px;">Anthropic (API Claude) — processamento IA dos anúncios</li>
+              <li style="margin-bottom:4px;">Apify — scraping de AutoScout24, Mobile.de, StandVirtual</li>
+              <li style="margin-bottom:4px;">Brave Search — pesquisa de dados técnicos (CO2, cilindrada)</li>
+              <li style="margin-bottom:4px;">ntfy.sh — notificações push no telemóvel</li>
+              <li style="margin-bottom:4px;">Railway — servidor de sync (opcional)</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">💰 Custos aproximados por análise</div></div>
+          <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
+            <p style="margin-bottom:10px;">Por cada 100 carros processados:</p>
+            <ul style="margin-left:20px;">
+              <li style="margin-bottom:4px;"><strong>Anthropic API:</strong> ≈ $1.50 ($3 por 1M tokens de input, $15 por 1M de output)</li>
+              <li style="margin-bottom:4px;"><strong>Apify (AS24/MDE):</strong> ≈ $0.30 por actor</li>
+              <li style="margin-bottom:4px;"><strong>Brave Search:</strong> grátis até 2.000 queries/mês</li>
+            </ul>
+            <p style="margin-top:12px;color:var(--ink3);font-size:11px;">Valores aproximados — o custo real depende da complexidade dos anúncios. O sistema mostra a estimativa antes de iniciar o processamento.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">📋 Changelog</div></div>
+          <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
+            <div style="margin-bottom:14px;">
+              <div style="display:flex;gap:10px;align-items:center;margin-bottom:4px;">
+                <strong style="color:var(--accent);">v0.1.5</strong>
+                <span style="font-size:10px;color:var(--ink3);">24 Abr 2026</span>
+              </div>
+              <ul style="margin-left:20px;font-size:11px;">
+                <li>Fase 3: Rate limiting no processamento, página Sobre, página de testes ISV</li>
+                <li>Fase 2: Nome auto-gerado, notas por carro, filtros avançados, comparação lado-a-lado, acções em lote</li>
+                <li>Fase 1: Toast notifications, auto-save, estimativa de custo, validação de keys, backup automático</li>
+                <li>Adicionadas notificações push (novo anúncio, baixa de preço)</li>
+                <li>Sync config nos cards de análise (importa do PC, activa no telemóvel)</li>
+                <li>Tema Azul Fintech (accent #1B3A6B, dourado #D4A017)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">⚙ Info técnica</div></div>
+          <div class="card-body" style="font-size:12px;color:var(--ink2);">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 16px;">
+              <strong>Versão:</strong><span>v0.1.5</span>
+              <strong>Servidor:</strong><span id="sobre-server-status">a verificar...</span>
+              <strong>Notificações:</strong><span id="sobre-notif-count">—</span>
+              <strong>Análises guardadas:</strong><span id="sobre-analyses-count">—</span>
+              <strong>Favoritos:</strong><span id="sobre-favs-count">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="text-align:center;font-size:10px;color:var(--ink3);margin-top:20px;">
+          AutoImport · Plataforma de Importação de Automóveis · ISV AT 2026
+        </div>
+      </div>
+    </div>
       </div>
     </div>
 
@@ -797,6 +996,77 @@ td.editing input{width:100%;background:#fff;border:2px solid var(--accent);color
 </div>
 
 <script>
+// ══════════════════════════════════════════════
+// TOASTS — user-facing notifications
+// ══════════════════════════════════════════════
+
+// ── Validate API keys by hitting a cheap endpoint ──────
+async function validateApiKey(provider){
+  if(provider === 'anthropic'){
+    const key = getApiKey();
+    if(!key) return;
+    try{
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 10,
+          messages: [{role:'user',content:'ok'}]
+        })
+      });
+      if(resp.ok){
+        showToast('✓ Anthropic OK','Key válida e a funcionar','success');
+      } else if(resp.status === 401){
+        showToast('Key inválida','A API key Anthropic não foi aceite','error');
+      } else {
+        showToast('Atenção', 'API respondeu com ' + resp.status, 'warn');
+      }
+    } catch(e){
+      showToast('Erro de rede','Não foi possível validar a key','warn');
+    }
+  }
+  else if(provider === 'apify'){
+    const key = getApifyKey();
+    if(!key) return;
+    try{
+      const resp = await fetch('https://api.apify.com/v2/users/me?token=' + encodeURIComponent(key));
+      if(resp.ok){
+        const data = await resp.json();
+        const user = data.data?.username || '';
+        showToast('✓ Apify OK', user ? 'Conta: ' + user : 'Key válida', 'success');
+      } else if(resp.status === 401){
+        showToast('Key inválida','A API key Apify não foi aceite','error');
+      } else {
+        showToast('Atenção','API respondeu com ' + resp.status,'warn');
+      }
+    } catch(e){
+      showToast('Erro de rede','Não foi possível validar a key','warn');
+    }
+  }
+}
+
+function showToast(title, msg, type){
+  type = type || 'info';
+  const container = document.getElementById('toast-container');
+  if(!container) return;
+  const div = document.createElement('div');
+  div.className = 'toast t-' + type;
+  div.innerHTML = '<div class="toast-title">' + title + '</div>' +
+                  (msg ? '<div class="toast-msg">' + msg + '</div>' : '');
+  container.appendChild(div);
+  const duration = type === 'error' ? 6000 : 3500;
+  setTimeout(() => {
+    div.classList.add('out');
+    setTimeout(() => div.remove(), 200);
+  }, duration);
+}
+
 // ══════════════════════════════════════════════
 // STATE
 // Server URL — update after Railway deploy
@@ -833,7 +1103,8 @@ const VIEWS = {
   analise:['Nova Análise','Upload · IA · Mercado · Resultados'],
   favoritos:['Favoritos','Anúncios guardados'],
   historico:['Análises Guardadas','Histórico de análises'],
-  config:['Configurações','Custos e tabelas ISV']
+  config:['Configurações','Custos e tabelas ISV'],
+  sobre:['Sobre','Informação · Privacidade · Changelog']
 };
 let viewHistory = ['dashboard'];
 
@@ -854,6 +1125,7 @@ function goView(id){
   if(id==='dashboard')renderDashboard();
   if(id==='historico')renderHistorico();
   if(id==='notificacoes')renderNotificacoes();
+  if(id==='sobre')renderSobre();
   if(id==='favoritos')renderFavoritos();
   closeSidebar();
 }
@@ -889,7 +1161,7 @@ function goStep(n){
 let files = {as24:null, mde:null, sv:null};
 
 function handleOriginFile(src, file){
-  if(!file?.name.endsWith('.csv'))return alert('Seleciona um ficheiro .csv');
+  if(!file?.name.endsWith('.csv')){ showToast('Ficheiro inválido','Seleciona um ficheiro .csv','warn'); return; }
   const reader=new FileReader();
   reader.onload=e=>{
     const parsed=parseCSV(e.target.result);
@@ -918,7 +1190,7 @@ function updateStep1(){
 }
 
 function handleSVFile(file){
-  if(!file?.name.endsWith('.csv'))return alert('Seleciona um ficheiro .csv');
+  if(!file?.name.endsWith('.csv')){ showToast('Ficheiro inválido','Seleciona um ficheiro .csv','warn'); return; }
   const reader=new FileReader();
   reader.onload=e=>{
     const parsed=parseCSV(e.target.result);
@@ -1028,9 +1300,48 @@ function getLegalTotal(){return Object.values(cfg.legal).reduce((a,b)=>a+b,0);}
 // ══════════════════════════════════════════════
 // PROCESSING
 // ══════════════════════════════════════════════
+let _processingLock = false;
 async function startProcessing(){
+  if(_processingLock){
+    showToast('Já a processar','Aguarda a conclusão da análise em curso','warn');
+    return;
+  }
   if(!checkApiKey()) return;
+
+  // Cost estimate — Claude Sonnet 4.5 ~$3/MTok in, $15/MTok out
+  const originCount = (files.as24?.rows?.length || 0) + (files.mde?.rows?.length || 0);
+  const svCount = files.sv?.rows?.length || 0;
+  const totalCars = originCount + svCount;
+  if(totalCars > 0){
+    // ≈ 800 tokens in + 200 out per car (batch of 3 = ~2500 tokens total)
+    const tokensIn  = totalCars * 800;
+    const tokensOut = totalCars * 200;
+    const costUSD = (tokensIn/1_000_000 * 3) + (tokensOut/1_000_000 * 15);
+    const apifyCost = originCount * 0.004 + svCount * 0.002;  // rough
+    const totalEUR = (costUSD * 0.93) + apifyCost;
+    const estimate = totalEUR.toFixed(2);
+    const proceed = confirm(
+      `Vais processar ${totalCars} anúncios (${originCount} origem + ${svCount} SV).
+
+` +
+      `Custo estimado: ≈ €${estimate}
+` +
+      `  · Anthropic: ≈ $${costUSD.toFixed(2)}
+` +
+      `  · Apify: ≈ $${apifyCost.toFixed(2)}
+
+` +
+      `Continuar?`
+    );
+    if(!proceed){
+      showToast('Processamento cancelado','Nenhum custo incorrido','info');
+      return;
+    }
+  }
+
+  _processingLock = true;
   processedOrigin=[];
+  showCarSkeleton(Math.min(totalCars, 6));
   const allOrigin=[
     ...(files.as24?.rows||[]).map(r=>({...r,_src:'as24'})),
     ...(files.mde?.rows||[]).map(r=>({...r,_src:'mde'}))
@@ -1080,6 +1391,15 @@ async function startProcessing(){
       done+=batch.length;
     }
     if(i+bsz<allOrigin.length)await sleep(1200);
+    // Auto-save checkpoint
+    try{
+      localStorage.setItem('ai_inprogress', JSON.stringify({
+        ts: Date.now(),
+        files: { as24: files.as24, mde: files.mde, sv: files.sv ? {name: files.sv.name, rows: files.sv.rows} : null },
+        processedOrigin,
+        progress: { done, total, phase: 'origin' }
+      }));
+    } catch(e){ /* storage full, skip */ }
   }
 
   // ── SECOND PASS: fill missing CO2/cilindrada for non-electrics ──────
@@ -1752,12 +2072,46 @@ function renderMarketHeader(){
 }
 
 function renderResults(){
-  const sorted=sortResults([...calcRows]);
-  document.getElementById('res-count').textContent=sorted.length;
-  const grid=document.getElementById('car-grid');
-  grid.innerHTML='';
-  sorted.forEach((r,i)=>grid.appendChild(buildCarCard(r,i)));
+  let filtered = [...calcRows];
+
+  // Apply filters
+  if(document.getElementById('f-score-high')?.checked){
+    filtered = filtered.filter(r => (r.score||0) >= 8);
+  }
+  if(document.getElementById('f-marg-pos')?.checked){
+    filtered = filtered.filter(r => (r.ml||0) > 0);
+  }
+  if(document.getElementById('f-marg-5k')?.checked){
+    filtered = filtered.filter(r => (r.ml||0) >= 5000);
+  }
+  const combFilter = document.getElementById('f-comb')?.value;
+  if(combFilter){
+    filtered = filtered.filter(r => (r.combustivel||'') === combFilter);
+  }
+  if(document.getElementById('f-has-notes')?.checked){
+    filtered = filtered.filter(r => r.userNotes && r.userNotes.trim());
+  }
+
+  const sorted = sortResults(filtered);
+  document.getElementById('res-count').textContent = sorted.length + (filtered.length !== calcRows.length ? ' / ' + calcRows.length : '');
+  const grid = document.getElementById('car-grid');
+  grid.innerHTML = '';
+  if(sorted.length === 0){
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1;"><div class="empty-icon">🔍</div><div class="empty-text">Nenhum carro corresponde aos filtros.</div></div>';
+  } else {
+    sorted.forEach((r,i) => grid.appendChild(buildCarCard(r,i)));
+  }
   renderEliminados();
+}
+
+function clearFilters(){
+  ['f-score-high','f-marg-pos','f-marg-5k','f-has-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.checked = false;
+  });
+  const comb = document.getElementById('f-comb');
+  if(comb) comb.value = '';
+  renderResults();
 }
 
 function sortResults(rows){
@@ -1785,7 +2139,11 @@ function buildCarCard(r,i){
   const srcBadges = srcs.map(s=>`<span class="src-badge-pill ${s==='AS24'?'src-as24':s==='MDE'?'src-mde':'src-merged'}">${s}</span>`).join('');
   div.innerHTML=`
     <button class="fav-btn ${isFav?'active':''}" onclick="toggleFav(event,${i})" title="${isFav?'Remover dos favoritos':'Guardar como favorito'}" style="left:auto;right:8px;">${isFav?'♥':'♡'}</button>
-    <button onclick="eliminarCarro(event,${i})" title="Eliminar anúncio" style="position:absolute;top:8px;left:8px;width:28px;height:28px;border-radius:50%;background:rgba(200,64,26,0.85);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;z-index:10;line-height:1;">✕</button>
+    <button onclick="eliminarCarro(event,${i})" title="Eliminar anúncio" style="position:absolute;top:8px;left:8px;width:28px;height:28px;border-radius:50%;background:rgba(185,28,28,0.85);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;z-index:10;line-height:1;">✕</button>
+    <label onclick="event.stopPropagation()" title="${compareCars.some(c=>c.url===r.url)?'Remover da comparação':'Adicionar à comparação'}" style="position:absolute;top:8px;left:44px;z-index:10;background:${compareCars.some(c=>c.url===r.url)?'var(--accent)':'rgba(255,255,255,.9)'};border:1px solid var(--border);border-radius:var(--r);padding:4px 8px;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:10px;color:${compareCars.some(c=>c.url===r.url)?'#fff':'var(--ink2)'};font-weight:600;">
+      <input type="checkbox" ${compareCars.some(c=>c.url===r.url)?'checked':''} onchange="toggleCompare(event,${i})" style="margin:0;accent-color:${compareCars.some(c=>c.url===r.url)?'#fff':'var(--accent)'};" />
+      ⇄
+    </label>
     <div class="car-card-img">
       ${r.foto_url?`<img src="${r.foto_url}" onerror="this.parentNode.innerHTML='🚗'" loading="lazy">`:'🚗'}
     </div>
@@ -1881,6 +2239,10 @@ function openCarModal(r){
         <div class="cs-item" style="background:transparent;"><div class="cs-val" style="color:var(--amber);">${r.ivaM!=null?fmt(r.ivaM)+'€':'—'}</div><div class="cs-label">IVA Margem (23%)</div></div>
         <div class="cs-item" style="background:transparent;"><div class="cs-val" style="color:${r.ml>=0?'var(--green)':'var(--accent)'};">${r.ml!=null?fmt(r.ml)+'€':'—'}</div><div class="cs-label">Margem Líquida</div></div>
       </div>
+      <div id="price-history-section" style="display:none;margin-bottom:var(--sp4);padding:var(--sp3);background:var(--surface2);border-radius:var(--r);">
+        <div style="font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:var(--sp2);font-weight:600;">📈 Histórico de preços</div>
+        <div id="price-history-content" style="font-size:12px;color:var(--ink2);"></div>
+      </div>
       <div style="font-size:11px;color:var(--ink3);margin-bottom:8px;">✏️ Clica em qualquer campo para editar — o ISV e margens recalculam automaticamente</div>
       <div class="detail-grid" id="modal-detail-grid">
         ${detailField('Ano', 'ano', r.ano||'', false, r)}
@@ -1902,9 +2264,18 @@ function openCarModal(r){
         ${detailField('Filtro DPF/FAP', 'filtro_particulas', r.filtro_particulas||'—', false, r, '', ['Sim','Não','Desconhecido'])}
       </div>
       ${r.notas?`<div class="alert alert-warn" style="margin-top:8px;">📋 ${r.notas}</div>`:''}
+      <div style="margin-top:var(--sp4);">
+        <div style="font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;font-weight:600;">📝 As minhas notas</div>
+        <textarea id="car-user-notes"
+          placeholder="Ligar para vendedor, preço estranho, agendar visita..."
+          rows="3"
+          style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--surface);resize:vertical;"
+          onblur="saveCarNotes(this)">${r.userNotes||''}</textarea>
+      </div>
     </div>`;
   document.getElementById('modal-overlay').classList.remove('hidden');
   document.getElementById('modal-overlay')._car=r;
+  if(r.url) loadPriceHistory(r.url);
 }
 
 function closeModal(e){
@@ -2212,7 +2583,28 @@ function saveAnalysis(){
   analyses=analyses.slice(0,50);
   localStorage.setItem('ai_analyses',JSON.stringify(analyses));
   updateBadges();
+
+  // Backup metadata to server (non-blocking)
+  const serverUrl = getServerUrl();
+  if(serverUrl){
+    fetch(serverUrl + '/analyses', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        id: entry.id, name: entry.name, date: entry.date,
+        count: entry.count, avgScore: entry.avgScore, avgMarg: entry.avgMarg,
+        searchUrls: entry.searchUrls || [],
+        syncEnabled: entry.syncEnabled, minScore: entry.minScore,
+        ntfyChannel: entry.ntfyChannel,
+      }),
+    }).catch(() => {/* silent */});
+  }
+
+  showToast('✓ Análise guardada', entry.name, 'success');
   const btn=event.target; btn.textContent='✓ Guardado!'; setTimeout(()=>btn.textContent='💾 Guardar Análise',2000);
+
+  // Clear in-progress checkpoint once saved
+  localStorage.removeItem('ai_inprogress');
 }
 
 function renderHistorico(){
@@ -2779,10 +3171,10 @@ Escolhe o modo:
       }
 
       input.value = '';
-      alert('✓ Importado! ' + novasAnalises.length + ' análise(s) nova(s), ' + novosFavs.length + ' favorito(s) novo(s)');
+      showToast('✓ Importado', novasAnalises.length + ' análise(s), ' + novosFavs.length + ' favorito(s)', 'success');
 
     } catch(err) {
-      alert('Erro ao importar: ficheiro inválido ou corrompido. ' + err.message);
+      showToast('Erro ao importar', 'Ficheiro inválido ou corrompido', 'error');
       input.value = '';
     }
   };
@@ -2894,12 +3286,14 @@ function showConfigStatus(id, msg, isError){
 
 function saveApiKey(key){
   key=(key||'').trim();
-  if(!key){ alert('Insere uma API key válida.'); return; }
-  if(!key.startsWith('sk-ant-')){ alert('A key deve começar com sk-ant-...'); return; }
+  if(!key){ showToast('Key em falta','Insere uma API key válida','warn'); return; }
+  if(!key.startsWith('sk-ant-')){ showToast('Key inválida','A key Anthropic deve começar com sk-ant-','error'); return; }
   localStorage.setItem('ai_api_key',key);
   const input=document.getElementById('api-key-input');
   if(input) input.value=key;
   showConfigStatus('api-key-status','✓ API key Anthropic guardada');
+  showToast('✓ Key guardada','A validar...','success');
+  validateApiKey('anthropic');
 }
 
 function toggleApiKeyVisibility(){
@@ -2911,7 +3305,7 @@ function toggleApiKeyVisibility(){
 function checkApiKey(){
   const key=getApiKey();
   if(!key){
-    alert('⚠️ Sem API key configurada.\n\nVai a Configurações e insere a tua API key da Anthropic.');
+    showToast('Sem API key','Vai a Configurações e insere a tua API key Anthropic','warn');
     goView('config');
     return false;
   }
@@ -2924,20 +3318,23 @@ function getBraveKey(){ return localStorage.getItem('ai_brave_key')||''; }
 
 function saveBraveKey(key){
   key=(key||'').trim();
-  if(!key){ alert('Insere uma API key do Brave válida.'); return; }
+  if(!key){ showToast('Key em falta','Insere uma API key do Brave válida','warn'); return; }
   localStorage.setItem('ai_brave_key',key);
   const input=document.getElementById('brave-key-input');
   if(input) input.value=key;
   showConfigStatus('brave-key-status','✓ API key Brave guardada');
+  showToast('✓ Key guardada','API Brave configurada','success');
 }
 
 function saveApifyKey(key){
   key=(key||'').trim();
-  if(!key){ alert('Insere uma API key do Apify válida.'); return; }
+  if(!key){ showToast('Key em falta','Insere uma API key do Apify válida','warn'); return; }
   localStorage.setItem('ai_apify_key',key);
   const input=document.getElementById('apify-key-input');
   if(input) input.value=key;
   showConfigStatus('apify-key-status','✓ API key Apify guardada');
+  showToast('✓ Key guardada','API Apify configurada','success');
+  validateApiKey('apify');
 }
 
 function setInputMode(mode){
@@ -2982,7 +3379,7 @@ async function fetchAS24FromUrl(){
   const input = document.getElementById('as24-url-input');
   const url = (input?.value||'').trim();
   if(!url || !url.includes('autoscout24.com')) return;
-  if(!getApifyKey()){ alert('API key do Apify não configurada.'); goView('config'); return; }
+  if(!getApifyKey()){ showToast('Apify em falta','Configura a key do Apify nas Configurações','warn'); goView('config'); return; }
   const btn = document.getElementById('btn-as24-url-fetch');
   const status = document.getElementById('as24-url-status');
   btn.disabled=true; btn.textContent='⏳ A pesquisar...';
@@ -3017,7 +3414,7 @@ async function fetchMDEFromUrl(){
   const input = document.getElementById('mde-url-input');
   const url = (input?.value||'').trim();
   if(!url || !url.includes('mobile.de')) return;
-  if(!getApifyKey()){ alert('API key do Apify não configurada.'); goView('config'); return; }
+  if(!getApifyKey()){ showToast('Apify em falta','Configura a key do Apify nas Configurações','warn'); goView('config'); return; }
   const btn = document.getElementById('btn-mde-fetch');
   const status = document.getElementById('mde-url-status');
   btn.disabled=true; btn.textContent='⏳ A pesquisar...';
@@ -3053,7 +3450,7 @@ async function fetchSVFromUrl(){
   const input = document.getElementById('sv-url-input');
   const url = (input?.value||'').trim();
   if(!url || !url.includes('standvirtual.com')) return;
-  if(!getApifyKey()){ alert('API key do Apify não configurada.'); goView('config'); return; }
+  if(!getApifyKey()){ showToast('Apify em falta','Configura a key do Apify nas Configurações','warn'); goView('config'); return; }
   const btn = document.getElementById('btn-sv-fetch');
   const status = document.getElementById('sv-url-status');
   btn.disabled=true; btn.textContent='⏳ A pesquisar...';
@@ -3080,7 +3477,7 @@ function getServerUrl(){ return localStorage.getItem('ai_server_url')||''; }
 
 function saveServerUrl(url){
   url = (url||'').trim();
-  if(!url){ alert('Insere o URL do servidor.'); return; }
+  if(!url){ showToast('URL em falta','Insere o URL do servidor','warn'); return; }
   localStorage.setItem('ai_server_url', url);
   const input = document.getElementById('server-url-input');
   if(input) input.value = url;
@@ -3260,6 +3657,9 @@ function getAnalysisNotifCount(analysisId){
   return notificacoes.filter(n => n.analysisId === analysisId && !n.read).length;
 }
 
+// Check for in-progress analysis
+setTimeout(checkResumeAnalysis, 800);
+
 // Refresh notifications every 5 minutes
 setInterval(() => { if(getServerUrl()) loadNotificacoes(); }, 5 * 60 * 1000);
 function toggleSyncAnalysis(i, enabled){
@@ -3312,6 +3712,382 @@ async function saveSyncConfig(e, i){
   }
 
   renderHistorico();
+}
+
+// ══════════════════════════════════════════════
+// RESUME IN-PROGRESS ANALYSIS
+// ══════════════════════════════════════════════
+function checkResumeAnalysis(){
+  try{
+    const saved = localStorage.getItem('ai_inprogress');
+    if(!saved) return;
+    const state = JSON.parse(saved);
+    const ageHours = (Date.now() - state.ts) / (1000*60*60);
+    if(ageHours > 24){
+      // Too old, discard
+      localStorage.removeItem('ai_inprogress');
+      return;
+    }
+    const carsDone = state.processedOrigin?.length || 0;
+    const total = state.progress?.total || 0;
+    if(carsDone === 0) return;
+    // Show banner in dashboard
+    setTimeout(() => {
+      if(confirm(`Encontrei uma análise em curso com ${carsDone}/${total} carros processados. Queres continuar?`)){
+        files = state.files || {};
+        processedOrigin = state.processedOrigin || [];
+        calcRows = processedOrigin.map(r => ({...r}));
+        goView('analise');
+        goStep(4);
+        if(typeof renderResults === 'function') renderResults();
+        showToast('Análise retomada', carsDone + ' carros carregados', 'success');
+      } else {
+        localStorage.removeItem('ai_inprogress');
+      }
+    }, 500);
+  } catch(e){ localStorage.removeItem('ai_inprogress'); }
+}
+
+// ── Auto-generate analysis name from processed cars ────
+function generateAnalysisName(){
+  if(!calcRows?.length) return 'Nova Análise';
+  // Find most common marca + modelo
+  const counts = {};
+  calcRows.forEach(r => {
+    if(r.marca && r.modelo){
+      const key = r.marca + ' ' + r.modelo;
+      counts[key] = (counts[key] || 0) + 1;
+    }
+  });
+  const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+  if(!sorted.length) return 'Análise ' + new Date().toLocaleDateString('pt-PT');
+
+  const topModel = sorted[0][0];
+  const coverage = sorted[0][1] / calcRows.length;
+
+  // If top model is dominant (>60%), use it. Otherwise use top marca.
+  if(coverage >= 0.6){
+    // Compact the model name if too long
+    return topModel.length > 30 ? topModel.substring(0, 30) : topModel;
+  } else {
+    const marcaCounts = {};
+    calcRows.forEach(r => {
+      if(r.marca) marcaCounts[r.marca] = (marcaCounts[r.marca] || 0) + 1;
+    });
+    const topMarca = Object.entries(marcaCounts).sort((a,b) => b[1] - a[1])[0]?.[0] || 'Múltiplas';
+    return topMarca + ' · ' + calcRows.length + ' carros';
+  }
+}
+
+function saveCarNotes(textarea){
+  const overlay = document.getElementById('modal-overlay');
+  const car = overlay?._car;
+  if(!car) return;
+  car.userNotes = textarea.value.trim();
+
+  // Update in calcRows
+  const idx = calcRows.findIndex(c => c.url === car.url);
+  if(idx >= 0){
+    calcRows[idx].userNotes = car.userNotes;
+  }
+  // Also in eliminatedRows
+  const eIdx = eliminatedRows.findIndex(c => c.url === car.url);
+  if(eIdx >= 0){
+    eliminatedRows[eIdx].userNotes = car.userNotes;
+  }
+  // Subtle feedback
+  textarea.style.borderColor = 'var(--green)';
+  setTimeout(() => textarea.style.borderColor = 'var(--border)', 1000);
+}
+// ── COMPARE CARS ─────────────────────────────
+let compareCars = [];
+
+function toggleCompare(event, idx){
+  event.stopPropagation();
+  const r = sortResults([...calcRows.filter(c => {
+    if(document.getElementById('f-score-high')?.checked && (c.score||0) < 8) return false;
+    if(document.getElementById('f-marg-pos')?.checked && (c.ml||0) <= 0) return false;
+    if(document.getElementById('f-marg-5k')?.checked && (c.ml||0) < 5000) return false;
+    const comb = document.getElementById('f-comb')?.value;
+    if(comb && c.combustivel !== comb) return false;
+    if(document.getElementById('f-has-notes')?.checked && !(c.userNotes||'').trim()) return false;
+    return true;
+  })])[idx];
+  if(!r) return;
+
+  const existing = compareCars.findIndex(c => c.url === r.url);
+  if(existing >= 0){
+    compareCars.splice(existing, 1);
+  } else {
+    if(compareCars.length >= 3){
+      showToast('Limite atingido','Máximo 3 carros na comparação','warn');
+      return;
+    }
+    compareCars.push(r);
+  }
+  updateCompareBar();
+  renderResults();  // re-render to update checkboxes
+}
+
+function updateCompareBar(){
+  let bar = document.getElementById('compare-bar');
+  if(compareCars.length === 0){
+    if(bar) bar.remove();
+    return;
+  }
+  if(!bar){
+    bar = document.createElement('div');
+    bar.id = 'compare-bar';
+    bar.style.cssText = 'position:fixed;bottom:var(--sp4);left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:var(--sp3) var(--sp4);border-radius:var(--r-pill);box-shadow:0 4px 16px rgba(0,0,0,.2);display:flex;align-items:center;gap:var(--sp3);font-size:13px;z-index:400;';
+    document.body.appendChild(bar);
+  }
+  bar.innerHTML = '<span>🔍 ' + compareCars.length + ' carro' + (compareCars.length>1?'s':'') + ' selecionado' + (compareCars.length>1?'s':'') + '</span>' +
+    '<button onclick="openCompareModal()" style="background:#fff;color:var(--accent);border:none;padding:5px 14px;border-radius:var(--r);font-weight:600;cursor:pointer;font-size:12px;">Comparar →</button>' +
+    '<button onclick="clearCompare()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);padding:5px 10px;border-radius:var(--r);cursor:pointer;font-size:11px;">✕</button>';
+}
+
+function clearCompare(){
+  compareCars = [];
+  updateCompareBar();
+  renderResults();
+}
+
+function openCompareModal(){
+  if(compareCars.length < 2){
+    showToast('Seleciona mais um','Precisas de pelo menos 2 carros para comparar','warn');
+    return;
+  }
+  const cols = compareCars.length;
+  const rows = [
+    ['Marca/Modelo', c => `<strong>${c.marca} ${c.modelo}</strong><br><span style="font-size:10px;color:var(--ink3);">${c.submodelo||''}</span>`],
+    ['Ano', c => c.ano || '—'],
+    ['Quilómetros', c => fmt(c.km||0) + ' km'],
+    ['Combustível', c => c.combustivel || '—'],
+    ['Potência', c => (c.potencia||0) + ' cv'],
+    ['Caixa', c => c.caixa || '—'],
+    ['Cor', c => c.cor || '—'],
+    ['País', c => c.pais || '—'],
+    ['Preço origem', c => `<strong>${fmt(c.preco||0)}€</strong>`],
+    ['ISV', c => fmt(c.isv||0) + '€'],
+    ['Custo Total PT', c => `<strong style="color:var(--accent);">${fmt(c.custo||0)}€</strong>`],
+    ['Margem Bruta', c => fmt(c.mb||0) + '€'],
+    ['Margem Líquida', c => {
+      const color = (c.ml||0) >= 0 ? 'var(--green)' : 'var(--red)';
+      return `<strong style="color:${color};">${fmt(c.ml||0)}€</strong>`;
+    }],
+    ['Score', c => {
+      const sc = c.score;
+      if(sc == null) return '—';
+      const color = sc>=8?'var(--green)':sc>=6?'var(--amber)':'var(--red)';
+      return `<span style="color:${color};font-weight:700;">${sc}/10</span>`;
+    }],
+  ];
+
+  let table = '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
+  table += '<thead><tr><th style="text-align:left;padding:10px;background:var(--surface2);">Atributo</th>';
+  compareCars.forEach((c,i) => {
+    table += `<th style="padding:10px;background:var(--surface2);text-align:left;min-width:150px;">Carro ${i+1}</th>`;
+  });
+  table += '</tr></thead><tbody>';
+
+  rows.forEach(([label, fn]) => {
+    table += `<tr><td style="padding:10px;border-bottom:1px solid var(--border2);color:var(--ink3);font-size:10px;text-transform:uppercase;letter-spacing:.06em;">${label}</td>`;
+    compareCars.forEach(c => {
+      table += `<td style="padding:10px;border-bottom:1px solid var(--border2);vertical-align:top;">${fn(c)}</td>`;
+    });
+    table += '</tr>';
+  });
+
+  // URLs row
+  table += '<tr><td style="padding:10px;color:var(--ink3);font-size:10px;text-transform:uppercase;">Ver anúncio</td>';
+  compareCars.forEach(c => {
+    table += `<td style="padding:10px;">${c.url?`<a href="${c.url}" target="_blank" style="color:var(--accent);font-size:11px;">↗ Abrir</a>`:'—'}</td>`;
+  });
+  table += '</tr>';
+
+  table += '</tbody></table>';
+
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-title">Comparação — ${cols} carros</div>
+        <div style="font-size:11px;color:var(--ink3);">Lado a lado</div>
+      </div>
+      <button onclick="closeModal()" style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--ink3);padding:4px;">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-x:auto;">${table}</div>
+  `;
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+function favAllFiltered(){
+  let filtered = [...calcRows];
+  if(document.getElementById('f-score-high')?.checked) filtered = filtered.filter(r => (r.score||0) >= 8);
+  if(document.getElementById('f-marg-pos')?.checked) filtered = filtered.filter(r => (r.ml||0) > 0);
+  if(document.getElementById('f-marg-5k')?.checked) filtered = filtered.filter(r => (r.ml||0) >= 5000);
+  const combFilter = document.getElementById('f-comb')?.value;
+  if(combFilter) filtered = filtered.filter(r => (r.combustivel||'') === combFilter);
+  if(document.getElementById('f-has-notes')?.checked) filtered = filtered.filter(r => (r.userNotes||'').trim());
+
+  if(!filtered.length){
+    showToast('Nada a favoritar','Nenhum carro corresponde aos filtros','warn');
+    return;
+  }
+  if(!confirm(`Favoritar ${filtered.length} carros visíveis?`)) return;
+
+  let added = 0;
+  filtered.forEach(r => {
+    if(!favs.some(f => f.url === r.url)){
+      favs.unshift({...r, favDate: new Date().toLocaleDateString('pt-PT')});
+      added++;
+    }
+  });
+  favs = favs.slice(0, 200);
+  localStorage.setItem('ai_favs', JSON.stringify(favs));
+  updateBadges();
+  renderResults();
+  showToast('✓ Favoritos', added + ' carros adicionados (' + (filtered.length - added) + ' já estavam guardados)', 'success');
+}
+
+function eliminarBaixaPontuacao(){
+  const toRemove = calcRows.filter(r => (r.score||0) > 0 && r.score < 5);
+  if(!toRemove.length){
+    showToast('Nada a eliminar','Nenhum carro com score abaixo de 5','info');
+    return;
+  }
+  if(!confirm(`Eliminar ${toRemove.length} carros com score abaixo de 5?`)) return;
+
+  toRemove.forEach(r => {
+    eliminatedRows.push(r);
+  });
+  calcRows = calcRows.filter(r => !((r.score||0) > 0 && r.score < 5));
+  renderResults();
+  showToast('✓ Eliminados', toRemove.length + ' carros movidos para eliminados', 'success');
+}
+
+async function renderSobre(){
+  document.getElementById('sobre-analyses-count').textContent = analyses.length + ' análises';
+  document.getElementById('sobre-favs-count').textContent = favs.length + ' favoritos';
+  document.getElementById('sobre-notif-count').textContent = notificacoes.length + ' (' + notificacoes.filter(n => !n.read).length + ' por ler)';
+
+  // Check server
+  const serverEl = document.getElementById('sobre-server-status');
+  const url = getServerUrl();
+  if(!url){
+    serverEl.innerHTML = '<span style="color:var(--ink3);">Não configurado</span>';
+    return;
+  }
+  serverEl.textContent = 'a verificar...';
+  try{
+    const resp = await fetch(url + '/health', {method:'GET'});
+    if(resp.ok){
+      const data = await resp.json();
+      serverEl.innerHTML = '<span style="color:var(--green);">● online</span> <span style="font-size:10px;color:var(--ink3);">· ' + (data.analyses||0) + ' análises sync</span>';
+    } else {
+      serverEl.innerHTML = '<span style="color:var(--amber);">● respondeu ' + resp.status + '</span>';
+    }
+  } catch(e){
+    serverEl.innerHTML = '<span style="color:var(--red);">● offline</span>';
+  }
+}
+
+async function loadPriceHistory(carUrl){
+  const section = document.getElementById('price-history-section');
+  const content = document.getElementById('price-history-content');
+  if(!section || !content || !carUrl) return;
+
+  const serverUrl = getServerUrl();
+  if(!serverUrl){ section.style.display = 'none'; return; }
+
+  try{
+    const resp = await fetch(serverUrl + '/listing-history?url=' + encodeURIComponent(carUrl));
+    if(!resp.ok){ section.style.display = 'none'; return; }
+    const data = await resp.json();
+
+    if(!data.history || data.history.length < 2){
+      section.style.display = 'none';
+      return;
+    }
+
+    // Show timeline of price changes
+    const history = data.history.sort((a,b) => new Date(a.ts) - new Date(b.ts));
+    const firstPrice = history[0].price;
+    const lastPrice = history[history.length-1].price;
+    const diff = lastPrice - firstPrice;
+    const diffPct = firstPrice ? ((diff / firstPrice) * 100).toFixed(1) : 0;
+
+    const trend = diff < 0 ? `<span style="color:var(--green);">📉 ${Math.abs(diff).toLocaleString('pt-PT')}€ (${diffPct}%)</span>`
+                : diff > 0 ? `<span style="color:var(--red);">📈 +${diff.toLocaleString('pt-PT')}€ (+${diffPct}%)</span>`
+                : '<span style="color:var(--ink3);">Sem alteração</span>';
+
+    let html = '<div style="margin-bottom:10px;font-family:var(--syne);font-weight:600;">' + trend + '</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">';
+    history.forEach((point, i) => {
+      const date = new Date(point.ts).toLocaleDateString('pt-PT', {day:'2-digit',month:'short',year:'2-digit'});
+      const isLatest = i === history.length - 1;
+      const isFirst = i === 0;
+      let badge = '';
+      if(isFirst) badge = '<span style="font-size:9px;color:var(--ink3);margin-left:6px;">(primeira vez)</span>';
+      else if(isLatest) badge = '<span style="font-size:9px;color:var(--accent);margin-left:6px;">(actual)</span>';
+      html += `<div style="font-size:11px;color:var(--ink3);">${date}</div>`;
+      html += `<div style="font-size:11px;${isLatest?'font-weight:700;color:var(--accent);':''}">${point.price.toLocaleString('pt-PT')}€${badge}</div>`;
+    });
+    html += '</div>';
+
+    content.innerHTML = html;
+    section.style.display = 'block';
+  } catch(e){
+    section.style.display = 'none';
+  }
+}
+
+// ── PWA SERVICE WORKER ────────────────────────
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => {
+      console.warn('Service worker registration failed:', err);
+    });
+  });
+}
+
+// ── THEME TOGGLE ──────────────────────────
+function toggleTheme(){
+  const dark = document.body.classList.toggle('dark');
+  localStorage.setItem('ai_theme', dark ? 'dark' : 'light');
+  showToast(dark ? '🌙 Tema escuro' : '☀️ Tema claro', '', 'info');
+}
+
+// Load saved theme on startup
+(function loadTheme(){
+  if(localStorage.getItem('ai_theme') === 'dark'){
+    document.body.classList.add('dark');
+  }
+})();
+
+// ── SKELETONS ───────────────────────────
+function carSkeletonHtml(count){
+  let html = '';
+  for(let i = 0; i < count; i++){
+    html += `<div class="skel-card" style="padding:0;overflow:hidden;">
+      <div class="skel skel-img" style="margin:0;border-radius:0;height:160px;"></div>
+      <div style="padding:var(--sp3) var(--sp4);">
+        <div class="skel skel-line" style="width:70%;"></div>
+        <div class="skel skel-line-sm" style="margin-bottom:var(--sp3);"></div>
+        <div style="display:flex;gap:6px;margin-bottom:var(--sp3);">
+          <div class="skel" style="width:40px;height:18px;"></div>
+          <div class="skel" style="width:50px;height:18px;"></div>
+          <div class="skel" style="width:35px;height:18px;"></div>
+        </div>
+        <div class="skel" style="height:52px;"></div>
+      </div>
+    </div>`;
+  }
+  return html;
+}
+
+function showCarSkeleton(count){
+  const grid = document.getElementById('car-grid');
+  if(grid) grid.innerHTML = carSkeletonHtml(count || 6);
 }
 
 </script>
