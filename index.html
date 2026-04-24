@@ -1414,7 +1414,12 @@ function goView(id){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('view-'+id).classList.add('active');
-  document.querySelector(`[onclick="goView('${id}')"]`)?.classList.add('active');
+  // Mark the corresponding nav-item as active (handles both goView() and resetAndNewAnalise)
+  let navBtn = document.querySelector(`[onclick="goView('${id}')"]`);
+  if(!navBtn && id === 'analise'){
+    navBtn = document.querySelector('[onclick="resetAndNewAnalise()"]');
+  }
+  navBtn?.classList.add('active');
   if(id==='config') initConfigStatus();
   const [t,s]=VIEWS[id]||['',''];
   document.getElementById('pg-title').textContent=t;
