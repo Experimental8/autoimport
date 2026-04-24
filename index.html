@@ -2723,6 +2723,27 @@ Escolhe o modo:
       updateBadges();
       renderDashboard();
 
+      // Push analyses with sync enabled to server
+      const serverUrl = getServerUrl();
+      if(serverUrl){
+        const toSync = novasAnalises.filter(a => a.syncEnabled && a.searchUrls?.length > 0);
+        toSync.forEach(a => {
+          fetch(serverUrl + '/analyses', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({
+              id: a.id, name: a.name,
+              syncEnabled: a.syncEnabled,
+              minScore: a.minScore || 7,
+              ntfyChannel: a.ntfyChannel || '',
+              searchUrls: a.searchUrls || [],
+            }),
+          }).catch(() => {});
+        });
+        if(toSync.length > 0)
+          console.log(`Sent ${toSync.length} analyses to sync server`);
+      }
+
       input.value = '';
       alert('✓ Importado! ' + novasAnalises.length + ' análise(s) nova(s), ' + novosFavs.length + ' favorito(s) novo(s)');
 
@@ -3540,6 +3561,58 @@ function getAnalysisNotifCount(analysisId){
 
 // Refresh notifications every 5 minutes
 setInterval(() => { if(getServerUrl()) loadNotificacoes(); }, 5 * 60 * 1000);
+function toggleSyncAnalysis(i, enabled){
+  const a = analyses[i];
+  if(!a) return;
+  a.syncEnabled = enabled;
+  // Show/hide fields
+  const fields = document.getElementById('sync-fields-' + i);
+  if(fields) fields.style.display = enabled ? '' : 'none';
+}
+
+async function saveSyncConfig(e, i){
+  e.stopPropagation();
+  const a = analyses[i];
+  if(!a) return;
+
+  const urlsRaw = document.getElementById('sync-urls-' + i)?.value || '';
+  const minScore = parseInt(document.getElementById('sync-score-' + i)?.value) || 7;
+  const ntfyChannel = document.getElementById('sync-ntfy-' + i)?.value?.trim() || '';
+  const syncEnabled = document.getElementById('sync-check-' + i)?.checked || false;
+
+  // Parse URLs — each line is a URL, detect source
+  const searchUrls = urlsRaw.split('\n')
+    .map(u => u.trim()).filter(Boolean)
+    .map(url => ({
+      url,
+      source: url.includes('autoscout24') ? 'as24' : url.includes('mobile.de') ? 'mde' : 'sv'
+    }));
+
+  a.syncEnabled = syncEnabled;
+  a.minScore = minScore;
+  a.ntfyChannel = ntfyChannel;
+  a.searchUrls = searchUrls;
+
+  localStorage.setItem('ai_analyses', JSON.stringify(analyses));
+
+  // Push to server
+  const serverUrl = getServerUrl();
+  if(serverUrl && syncEnabled){
+    try{
+      await fetch(serverUrl + '/analyses', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          id: a.id, name: a.name,
+          syncEnabled, minScore, ntfyChannel, searchUrls,
+        }),
+      });
+    } catch(err){ console.warn('Server push failed:', err.message); }
+  }
+
+  renderHistorico();
+}
+
 </script>
 </body>
 </html>
