@@ -776,11 +776,8 @@ const DEF_CFG = {
   legal:{'Inspeção IPO':76,'DAV/Alfândega':35,'Homologação COC':60,'Registo+DUA':55,'Margem administrativa':200,'Margem preparação':2000}
 };
 let cfg = JSON.parse(localStorage.getItem('ai_cfg2')||'null') || DEF_CFG;
-let favs = [];
-let analyses = [];
-// Load from localStorage immediately for fast render
-try { favs     = JSON.parse(localStorage.getItem('ai_favs')     || '[]'); } catch { favs = []; }
-try { analyses = JSON.parse(localStorage.getItem('ai_analyses') || '[]'); } catch { analyses = []; }
+let favs     = JSON.parse(localStorage.getItem('ai_favs')     || '[]');
+let analyses = JSON.parse(localStorage.getItem('ai_analyses') || '[]');
 
 // Current analysis state
 let originRows = []; // AS24 + Mobile.de combined
@@ -789,117 +786,6 @@ let processedOrigin = [];
 let svMarket = {};   // computed from SV
 let calcRows = [];
 let currentStep = 1;
-
-// ══════════════════════════════════════════════
-// CLOUD SYNC — server as source of truth
-// Falls back to localStorage if server unavailable
-// ══════════════════════════════════════════════
-
-async function cloudGet(path) {
-  const url = getServerUrl();
-  if (!url) return null;
-  try {
-    const resp = await fetch(url + path);
-    if (!resp.ok) return null;
-    return await resp.json();
-  } catch { return null; }
-}
-
-async function cloudPost(path, data) {
-  const url = getServerUrl();
-  if (!url) return false;
-  try {
-    const resp = await fetch(url + path, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    return resp.ok;
-  } catch { return false; }
-}
-
-async function cloudDelete(path) {
-  const url = getServerUrl();
-  if (!url) return false;
-  try {
-    const resp = await fetch(url + path, { method: 'DELETE' });
-    return resp.ok;
-  } catch { return false; }
-}
-
-// Load analyses — merge server + localStorage
-// Server wins for metadata, localStorage wins for car data
-async function loadAnalyses() {
-  let local = [];
-  try { local = JSON.parse(localStorage.getItem('ai_analyses') || '[]'); }
-  catch { local = []; }
-
-  const fromServer = await cloudGet('/analyses');
-  if (fromServer && Array.isArray(fromServer) && fromServer.length > 0) {
-    // Merge: use server metadata but keep local car data if available
-    analyses = fromServer.map(serverEntry => {
-      const localEntry = local.find(l => l.id === serverEntry.id);
-      if (localEntry && localEntry.cars && localEntry.cars.length > 0) {
-        // Local has full car data — merge with server metadata
-        return { ...serverEntry, cars: localEntry.cars, eliminados: localEntry.eliminados, market: localEntry.market || serverEntry.market };
-      }
-      return serverEntry;
-    });
-    localStorage.setItem('ai_analyses', JSON.stringify(analyses));
-  } else {
-    analyses = local;
-  }
-}
-
-// Load favourites — server first, localStorage fallback
-async function loadFavourites() {
-  try { favs = JSON.parse(localStorage.getItem('ai_favs') || '[]'); }
-  catch { favs = []; }
-
-  const fromServer = await cloudGet('/favourites');
-  if (fromServer && Array.isArray(fromServer) && fromServer.length > 0) {
-    favs = fromServer;
-    localStorage.setItem('ai_favs', JSON.stringify(favs));
-  }
-}
-
-// Save analysis — server + localStorage
-// Server only needs metadata for sync, not full car data
-async function persistAnalysis(analysis) {
-  localStorage.setItem('ai_analyses', JSON.stringify(analyses));
-  const serverPayload = {
-    id:          analysis.id,
-    name:        analysis.name,
-    date:        analysis.date,
-    searchUrls:  analysis.searchUrls  || [],
-    syncEnabled: analysis.syncEnabled || false,
-    minScore:    analysis.minScore    || 7,
-    ntfyChannel: analysis.ntfyChannel || '',
-    norma:       analysis.norma       || 'WLTP',
-    // Summary stats only — no full car array
-    carCount:    (analysis.cars || []).length,
-    market:      analysis.market || {},
-  };
-  await cloudPost('/analyses', serverPayload);
-}
-
-// Delete analysis — server + localStorage
-async function deleteAnalysis(id) {
-  await deleteAnalysis(id);
-  await cloudDelete('/analyses/' + id);
-}
-
-// Save favourite — server + localStorage
-async function persistFavourite(fav) {
-  localStorage.setItem('ai_favs', JSON.stringify(favs));
-  await cloudPost('/favourites', fav);
-}
-
-// Delete favourite — server + localStorage
-async function deleteFavourite(id) {
-  await deleteFavourite(id);
-  await cloudDelete('/favourites/' + id);
-}
 
 // ══════════════════════════════════════════════
 // NAVIGATION
@@ -2309,7 +2195,7 @@ function renderHistorico(){
     div.innerHTML=`
       <button class="ac-del" onclick="deleteAnalysis(event,${i})" title="Apagar análise">✕</button>
       <div class="ac-title" contenteditable="true" onblur="renameAnalysis(this,${i})" style="outline:none;border-bottom:1px dashed transparent;padding-right:24px;" onfocus="this.style.borderBottomColor='var(--accent)'" onblur="this.style.borderBottomColor='transparent'">${a.name}</div>
-      <div class="ac-sub">${a.date} · ${a.count} carros · clica para abrir</div>
+      <div class="ac-sub">${a.date} · ${a.cars?.length ?? a.carCount ?? a.count ?? 0} carros · clica para abrir</div>
       <div class="ac-stats">
         <div class="ac-stat"><div class="ac-stat-val">${a.count}</div><div class="ac-stat-label">Carros</div></div>
         <div class="ac-stat"><div class="ac-stat-val">${a.avgScore!=null?a.avgScore:'—'}</div><div class="ac-stat-label">Score Médio</div></div>
@@ -2531,7 +2417,7 @@ function renderDashboard(){
     div.innerHTML=`
       <div style="flex:1;min-width:0;">
         <div style="font-family:var(--syne);font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.name}</div>
-        <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${a.date} · ${a.count} carros</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${a.date} · ${a.cars?.length ?? a.carCount ?? a.count ?? 0} carros</div>
       </div>
       <div style="display:flex;gap:16px;flex-shrink:0;">
         <div style="text-align:center;">
@@ -3460,16 +3346,6 @@ function initConfigStatus(){
   });
 }
 
-// Load from server after page is ready
-window.addEventListener('load', async () => {
-  if(!getServerUrl()) return;
-  await loadAnalyses();
-  await loadFavourites();
-  renderDashboard();
-  if(document.getElementById('view-historico')?.classList.contains('active')) renderHistorico();
-  updateFavBadge();
-  updateHistBadge();
-});
 </script>
 </body>
 </html>
