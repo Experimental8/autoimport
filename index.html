@@ -1655,14 +1655,16 @@ function calcMarg(r){
   const temF=String(r.filtro_particulas||'').toLowerCase()==='sim';
   const isv=calcISV(r.cilindrada||0,r.co2||0,r.combustivel,r.co2_norma||norma,r.ano||2020,temF);
   const custo=(r.preco||0)+transp+isv+legal;
-  // Use saved svRef on the row first, fallback to svMarket
-  const svRef=r.svRef||svMarket.preco_medio||0;
+  // Per-car matched price first (modelo+ano), fallback to global average
+  const svRef = r.svRefMatched || r.svRef || svMarket.preco_medio || 0;
+  const svSource = r.svRefSource || 'global';
+  const svMatchCount = r.svRefCount || 0;
   const mb=svRef?svRef-custo:null;
   const ivaM=svRef?Math.round(0.23*(svRef-(r.preco||0))):null;
   const ml=mb!=null&&ivaM!=null?mb-ivaM:null;
   const mp=mb!=null&&custo>0?mb/custo:null;
   const score=mp!=null?Math.min(100,Math.max(0,Math.round(mp*200))):null;
-  return{transp,isv,legal,custo,svRef,mb,ivaM,ml,mp,score};
+  return{transp,isv,legal,custo,svRef,svSource,svMatchCount,mb,ivaM,ml,mp,score};
 }
 
 function getLegalTotal(){return Object.values(cfg.legal).reduce((a,b)=>a+b,0);}
@@ -1705,6 +1707,23 @@ async function startProcessing(){
     );
     if(!proceed){
       showToast('Processamento cancelado','Nenhum custo incorrido','info');
+      return;
+    }
+  }
+
+  // Detect outliers in origin prices
+  const allRawOrigin = [...(files.as24?.rows||[]), ...(files.mde?.rows||[])];
+  const outliers = detectPriceOutliers(allRawOrigin);
+  if(outliers.length > 0){
+    const preview = outliers.slice(0, 5).map(o => `  • ${o.price.toLocaleString('pt-PT')}€ — ${o.reason}`).join('\n');
+    const more = outliers.length > 5 ? `\n  ... e mais ${outliers.length - 5}` : '';
+    const proceed2 = confirm(
+      `⚠ Detectados ${outliers.length} preços suspeitos:\n\n${preview}${more}\n\n` +
+      `Estes anúncios podem ter erros de scraping. Continuar na mesma?\n` +
+      `(Podes filtrá-los depois no passo Resultados)`
+    );
+    if(!proceed2){
+      showToast('Processamento cancelado', 'Revê os anúncios suspeitos', 'info');
       return;
     }
   }
@@ -1802,20 +1821,48 @@ async function startProcessing(){
         filled.forEach(f => {
           const idx = processedOrigin.findIndex(r=>r.url===f.url);
           if(idx!==-1){
+            const car = processedOrigin[idx];
+            const ref = findModelReference(car);
+
+            // Validate CO2 against reference
             if(f.co2 && f.co2>0){
-              processedOrigin[idx].co2=f.co2;
-              processedOrigin[idx].co2_inferred=true;
-              processedOrigin[idx].co2_missing=false;
-              processedOrigin[idx].co2_fonte=f.fonte_co2||'';
-              processedOrigin[idx].co2_confianca=f.confianca||'media';
+              let co2Valid = true;
+              if(ref && ref.co2){
+                const [minCO2, maxCO2] = ref.co2;
+                // Allow 20% tolerance beyond reference
+                if(f.co2 < minCO2 * 0.8 || f.co2 > maxCO2 * 1.2){
+                  co2Valid = false;
+                  log(`#${idx+1}`, `CO2 ${f.co2}g/km rejeitado: fora do range ${minCO2}-${maxCO2} para ${car.marca} ${car.modelo}`, 'warn');
+                }
+              }
+              if(co2Valid){
+                car.co2=f.co2;
+                car.co2_inferred=true;
+                car.co2_missing=false;
+                car.co2_fonte=f.fonte_co2||'';
+                car.co2_confianca=f.confianca||'media';
+              }
             }
+
+            // Validate cilindrada against reference
             if(f.cilindrada && f.cilindrada>0){
-              processedOrigin[idx].cilindrada=f.cilindrada;
-              processedOrigin[idx].cil_inferred=true;
-              processedOrigin[idx].cil_missing=false;
-              processedOrigin[idx].cil_fonte=f.fonte_cil||'';
+              let cilValid = true;
+              if(ref && ref.cil){
+                const [minCil, maxCil] = ref.cil;
+                if(f.cilindrada < minCil * 0.9 || f.cilindrada > maxCil * 1.1){
+                  cilValid = false;
+                  log(`#${idx+1}`, `Cilindrada ${f.cilindrada}cc rejeitada: fora do range ${minCil}-${maxCil} para ${car.marca} ${car.modelo}`, 'warn');
+                }
+              }
+              if(cilValid){
+                car.cilindrada=f.cilindrada;
+                car.cil_inferred=true;
+                car.cil_missing=false;
+                car.cil_fonte=f.fonte_cil||'';
+              }
             }
-            processedOrigin[idx].notas = (processedOrigin[idx].notas||'').split('|').filter(n=>!n.includes('CO2 em falta')&&!n.includes('Cilindrada em falta')).join('|').trim();
+
+            car.notas = (car.notas||'').split('|').filter(n=>!n.includes('CO2 em falta')&&!n.includes('Cilindrada em falta')).join('|').trim();
           }
         });
         await sleep(1500);
@@ -1861,6 +1908,23 @@ async function startProcessing(){
   // FASE 3: Calcular resultados
   eliminatedRows=[];
   logStats={};
+  // Match SV price per-car (modelo+ano) before calculating margins
+  const svRows = files.sv?.rows || [];
+  processedOrigin = processedOrigin.map(r => {
+    const match = matchSVPrice(r, svRows);
+    return {
+      ...r,
+      svRefMatched: match.price,
+      svRefSource: match.source,
+      svRefCount: match.count,
+      svRefMin: match.min,
+      svRefMax: match.max
+    };
+  });
+  const matchedCount = processedOrigin.filter(r => r.svRefMatched).length;
+  if(matchedCount > 0){
+    log('Match SV', `${matchedCount}/${processedOrigin.length} carros com preço de referência específico por modelo/ano`, 'ok');
+  }
   calcRows=processedOrigin.map(r=>({...r,...calcMarg(r)}));
   document.getElementById('ov-legal').value=getLegalTotal();
   document.getElementById('wf-step3').classList.add('hidden');
@@ -1910,12 +1974,12 @@ async function processBatch(batch){
   }).join('\n\n---\n\n');
 
   const prompt=`Normaliza estes anúncios de carros. Devolve APENAS array JSON com campos:
-marca,modelo,submodelo,ano,km,combustivel("Elétrico"|"PHEV"|"Gasolina"|"Gasóleo"|"Híbrido Mild"),co2(g/km),co2_inferred(bool),co2_norma("WLTP"|"NEDC"),cilindrada(cc),cil_inferred(bool),potencia(cv),caixa("Automática"|"Manual"|"Semi-automática"),cor,carrocaria("SUV"|"Berlina"|"Carrinha"|"Coupé"|"Cabrio"|"Monovolume"),emissoes,lugares,iva_dedutivel("Sim"|"Não"|"Desconhecido"),pais,dealer,donos,inspecao,filtro_particulas("Sim"|"Não"|"Desconhecido"),preco,url,foto_url,fonte("AS24"|"MDE"),notas,co2_conf("alta"|"média"|"baixa"),cil_conf("alta"|"média"|"baixa"),norma_conf("alta"|"média"|"baixa").
+marca,modelo,submodelo,ano,km,combustivel("Elétrico"|"PHEV"|"Gasolina"|"Gasóleo"|"Híbrido Mild"),co2(g/km),co2_inferred(bool),co2_norma("WLTP"|"NEDC"),cilindrada(cc),cil_inferred(bool),potencia(cv),caixa("Automática"|"Manual"|"Semi-automática"),cor,carrocaria("SUV"|"Berlina"|"Carrinha"|"Coupé"|"Cabrio"|"Monovolume"),emissoes,lugares,iva_dedutivel("Sim"|"Não"|"Desconhecido"),pais,dealer,seller_type("Profissional"|"Particular"|"Desconhecido"),donos,inspecao,filtro_particulas("Sim"|"Não"|"Desconhecido"),preco,url,foto_url,fonte("AS24"|"MDE"),notas,co2_conf("alta"|"média"|"baixa"),cil_conf("alta"|"média"|"baixa"),norma_conf("alta"|"média"|"baixa").
 
 REGRAS:
 Combustível: AS24 "Electric/Gasoline"→PHEV; "Electric"→Elétrico; "Diesel"→Gasóleo. MDE driveType="Electric motor"→Elétrico; "Plug-in Hybrid"→PHEV; "Mild Hybrid"→Híbrido Mild.
 CO2/Cil: Se 0 ou ausente (não-elétrico) → co2_inferred=true mas deixar 0 (segunda passagem trata). Extrair de "43 g/km (comb.)"→43. MDE kW→cv=kW×1.36. AS24 "(160hp)"→extrair.
-Outros: netPrice/amount MDE→iva_dedutivel="Sim". 2020+→WLTP (norma_conf=alta para 2021+, média para 2020, baixa para 2018-2019). Confianças: co2_conf=alta se explícito no anúncio com unidade, média se inferido do modelo, baixa se calculado. cil_conf=alta se explícito, média se do submodelo conhecido. 2020+→WLTP. foto_url=images/0 ou imageUrls/0. Carroçaria PT: Estate→Carrinha,Saloon→Berlina,Coupe→Coupé. Cor PT: Black→Preto,White→Branco,Red→Vermelho,Blue→Azul,Grey→Cinzento,Green→Verde,Silver→Prateado.
+Outros: netPrice/amount MDE→iva_dedutivel="Sim". 2020+→WLTP (norma_conf=alta para 2021+, média para 2020, baixa para 2018-2019). Seller: dealer/sellerType="Dealer"→"Profissional"; "Private"→"Particular"; caso contrário "Desconhecido". Confianças: co2_conf=alta se explícito no anúncio com unidade, média se inferido do modelo, baixa se calculado. cil_conf=alta se explícito, média se do submodelo conhecido. 2020+→WLTP. foto_url=images/0 ou imageUrls/0. Carroçaria PT: Estate→Carrinha,Saloon→Berlina,Coupe→Coupé. Cor PT: Black→Preto,White→Branco,Red→Vermelho,Blue→Azul,Grey→Cinzento,Green→Verde,Silver→Prateado.
 
 Anúncios:
 ${batchText}
@@ -2264,6 +2328,191 @@ async function analyzeSVMarket(rows){
   };
 }
 
+
+// ── ESTIMATIVA DE DIAS PARA VENDER ──
+function estimateDaysToSell(car){
+  if(!car.custo || !car.svRef) return null;
+
+  // Base: depende do número de anúncios comparáveis (saturação)
+  const matches = car.svRefCount || 0;
+  let baseDays;
+  if(matches >= 30) baseDays = 90;       // mercado saturado
+  else if(matches >= 15) baseDays = 60;  // oferta moderada
+  else if(matches >= 5) baseDays = 45;   // boa liquidez
+  else if(matches >= 1) baseDays = 35;   // mercado escasso (nicho)
+  else baseDays = 70;                    // sem dados
+
+  // Price competitiveness: quanto mais barato vs mediana, mais rápido vende
+  // Preço de venda projectado = svRef. Quanto custo < svRef, mais margem, mais pode baixar preço se precisar
+  const margin = (car.ml||0);
+  const marginPct = car.preco > 0 ? margin / car.preco : 0;
+
+  let priceFactor = 1;
+  if(marginPct >= 0.20) priceFactor = 0.7;      // margem >20% → pode ser agressivo no preço
+  else if(marginPct >= 0.10) priceFactor = 0.85;
+  else if(marginPct >= 0.05) priceFactor = 1.0;
+  else if(marginPct >= 0) priceFactor = 1.3;    // margem apertada → preço alto → demora
+  else priceFactor = 2.0;                       // prejuízo → muito difícil vender
+
+  // Fuel type factor (PT market preferences)
+  let fuelFactor = 1;
+  const comb = car.combustivel || '';
+  if(comb === 'Gasóleo') fuelFactor = 0.9;       // gasóleo ainda vende bem em PT
+  else if(comb === 'Gasolina') fuelFactor = 1.0;
+  else if(comb === 'PHEV') fuelFactor = 1.2;     // mais nicho
+  else if(comb === 'Elétrico') fuelFactor = 1.3; // demora mais em PT
+  else if(comb === 'Híbrido Mild') fuelFactor = 1.1;
+
+  // Kilometragem factor
+  const km = car.km || 0;
+  const idade = Math.max(1, new Date().getFullYear() - (car.ano || 2020));
+  const kmPerYear = km / idade;
+  let kmFactor = 1;
+  if(kmPerYear > 30000) kmFactor = 1.3;         // uso intensivo
+  else if(kmPerYear > 20000) kmFactor = 1.1;
+  else if(kmPerYear < 10000) kmFactor = 0.9;    // pouco uso, mais atractivo
+
+  const estDays = Math.round(baseDays * priceFactor * fuelFactor * kmFactor);
+
+  // Classification
+  let label, color;
+  if(estDays <= 30){ label = '💨 Venda rápida'; color = 'var(--green)'; }
+  else if(estDays <= 60){ label = '✓ Venda normal'; color = 'var(--accent)'; }
+  else if(estDays <= 90){ label = '⏳ Venda lenta'; color = 'var(--amber)'; }
+  else { label = '⚠ Difícil venda'; color = 'var(--red)'; }
+
+  return { days: estDays, label, color };
+}
+
+// ── MATCH SV por modelo+ano (preço de referência específico para cada carro) ──
+function matchSVPrice(car, svRows){
+  if(!svRows || !svRows.length || !car.marca || !car.modelo){
+    return { price: null, count: 0, source: 'none' };
+  }
+
+  const normalize = s => (s||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,' ').trim();
+  const targetMarca = normalize(car.marca);
+  const targetModelo = normalize(car.modelo);
+  const targetAno = parseInt(car.ano) || 0;
+
+  // Score each SV row by similarity
+  const candidates = svRows.map(sv => {
+    // Try common field names for SV
+    const svTitle = normalize((sv.title || sv.name || '') + ' ' + (sv.subtitle || sv.version || ''));
+    const svMarca = normalize(sv.brand || sv.manufacturer || sv.marca || '');
+    const svModelo = normalize(sv.model || sv.modelo || '');
+    const svAno = parseInt(sv.year || sv.ano || sv.firstRegistration || '') || 0;
+    const svPrice = parseFloat(sv.price || sv.preco || 0);
+
+    if(!svPrice || svPrice < 500 || svPrice > 500000) return null;
+
+    // Match marca
+    let marcaMatch = 0;
+    if(svMarca && svMarca === targetMarca) marcaMatch = 2;
+    else if(svTitle.includes(targetMarca)) marcaMatch = 1;
+    if(marcaMatch === 0) return null;
+
+    // Match modelo (more tolerant)
+    let modeloMatch = 0;
+    if(svModelo && svModelo === targetModelo) modeloMatch = 3;
+    else if(svModelo && (svModelo.includes(targetModelo) || targetModelo.includes(svModelo))) modeloMatch = 2;
+    else if(svTitle.includes(targetModelo)) modeloMatch = 1;
+    if(modeloMatch === 0) return null;
+
+    // Year distance
+    const yearDiff = targetAno && svAno ? Math.abs(targetAno - svAno) : 99;
+
+    return { sv, price: svPrice, marcaMatch, modeloMatch, yearDiff };
+  }).filter(Boolean);
+
+  if(!candidates.length){
+    return { price: null, count: 0, source: 'none' };
+  }
+
+  // Try strict match first: same model + year ±1
+  let strict = candidates.filter(c => c.modeloMatch >= 2 && c.yearDiff <= 1);
+
+  if(strict.length >= 3){
+    const prices = strict.map(c => c.price).sort((a,b)=>a-b);
+    // Remove top/bottom 10% as outliers
+    const trim = Math.floor(prices.length * 0.1);
+    const trimmed = trim > 0 ? prices.slice(trim, -trim) : prices;
+    const median = trimmed[Math.floor(trimmed.length/2)];
+    return {
+      price: Math.round(median),
+      count: strict.length,
+      source: 'strict',
+      min: Math.min(...strict.map(c=>c.price)),
+      max: Math.max(...strict.map(c=>c.price))
+    };
+  }
+
+  // Fallback: same model, year ±3
+  let relaxed = candidates.filter(c => c.modeloMatch >= 2 && c.yearDiff <= 3);
+  if(relaxed.length >= 3){
+    const prices = relaxed.map(c => c.price).sort((a,b)=>a-b);
+    return {
+      price: Math.round(prices[Math.floor(prices.length/2)]),
+      count: relaxed.length,
+      source: 'relaxed',
+      min: Math.min(...prices),
+      max: Math.max(...prices)
+    };
+  }
+
+  // Very relaxed: just same brand, year ±3 (last resort)
+  let broad = candidates.filter(c => c.yearDiff <= 3);
+  if(broad.length >= 5){
+    const prices = broad.map(c => c.price).sort((a,b)=>a-b);
+    return {
+      price: Math.round(prices[Math.floor(prices.length/2)]),
+      count: broad.length,
+      source: 'broad',
+      min: Math.min(...prices),
+      max: Math.max(...prices)
+    };
+  }
+
+  // Not enough data for reliable match
+  return { price: null, count: candidates.length, source: 'insufficient' };
+}
+
+
+// ── OUTLIER DETECTION — preços suspeitos antes de processar ──
+function detectPriceOutliers(rows){
+  const prices = rows.map(r => parseFloat(r.rawPrice || r.price || r['price/amount'] || 0)).filter(p => p > 0);
+  if(prices.length < 5) return [];
+
+  const sorted = [...prices].sort((a,b) => a-b);
+  const median = sorted[Math.floor(sorted.length/2)];
+
+  const outliers = [];
+  rows.forEach((r, idx) => {
+    const p = parseFloat(r.rawPrice || r.price || r['price/amount'] || 0);
+    if(!p) return;
+
+    // Absolute errors
+    if(p < 500){
+      outliers.push({idx, price: p, reason: 'Preço abaixo de 500€ — provável erro'});
+      return;
+    }
+    if(p > 500000){
+      outliers.push({idx, price: p, reason: 'Preço acima de 500.000€ — provável erro'});
+      return;
+    }
+
+    // Deviation from median
+    const ratio = p / median;
+    if(ratio < 0.2){
+      outliers.push({idx, price: p, reason: `Preço ${Math.round(ratio*100)}% da mediana (${Math.round(median).toLocaleString('pt-PT')}€)`});
+    } else if(ratio > 5){
+      outliers.push({idx, price: p, reason: `Preço ${Math.round(ratio*100)}% da mediana (${Math.round(median).toLocaleString('pt-PT')}€)`});
+    }
+  });
+
+  return outliers;
+}
+
 function computeSVFallback(rows){
   const prices=rows.map(r=>parseFloat(r.price||r.preco||0)).filter(p=>p>0);
   if(!prices.length)return{count:0,preco_min:0,preco_medio:0,preco_max:0,km_medio:0,market_score:5,saturacao:'Sem dados',summary:'Sem dados SV'};
@@ -2549,7 +2798,11 @@ function buildCarCard(r,i){
         <span class="meta-pill">${fmt(r.km||0)} km</span>
         <span class="tag ${fc}">${r.combustivel}</span>
         <span class="meta-pill">${r.pais||'—'}</span>
+        ${r.seller_type === 'Particular' ? '<span class="meta-pill" style="background:var(--amber-l);color:var(--amber);" title="Vendedor particular">👤 Particular</span>' : ''}
+        ${r.seller_type === 'Profissional' ? '<span class="meta-pill" style="background:var(--blue-l);color:var(--blue);" title="Stand/dealer">🏢 Stand</span>' : ''}
       </div>
+      ${(()=>{ const dts = estimateDaysToSell(r); if(!dts) return ''; return `<div style="margin-top:var(--sp2);font-size:10px;color:${dts.color};font-weight:600;" title="Baseado em saturação, margem e preferências do mercado PT">${dts.label} · ~${dts.days}d</div>`; })()}
+      ${r.svRefMatched ? `<div style="margin-top:4px;font-size:9px;color:var(--ink3);" title="Preço médio SV para ${r.marca} ${r.modelo} ${r.ano}">📊 SV match: ${fmt(r.svRefMatched)}€ (${r.svRefCount} carros)</div>` : ''}
       <div class="car-card-costs">
         <div class="cc-item"><div class="cc-label">Compra</div><div class="cc-val">${fmt(r.preco||0)}€</div></div>
         <div class="cc-item"><div class="cc-label">ISV</div><div class="cc-val">${fmt(r.isv||0)}€</div></div>
