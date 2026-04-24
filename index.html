@@ -383,12 +383,66 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
 .btn:active{transform:scale(0.97);transition:transform .08s;}
 .nav-item:active{background:var(--accent-l);}
 .car-card:active{transform:scale(0.995);}
+
+/* ── BETA BANNER ─────────────────────────── */
+.beta-banner{
+  background:linear-gradient(90deg, #B8860B 0%, #D4A017 100%);
+  color:#fff;
+  padding:var(--sp2) var(--sp4);
+  font-size:11px;
+  font-family:var(--mono);
+  letter-spacing:.03em;
+  display:flex;
+  align-items:center;
+  gap:var(--sp3);
+  position:relative;
+  z-index:110;
+  min-height:36px;
+}
+.beta-banner.hidden{display:none;}
+.beta-banner-text{
+  flex:1;
+  min-width:0;
+  text-align:center;
+  line-height:1.4;
+}
+.beta-banner-text a{color:#fff;text-decoration:underline;font-weight:600;white-space:nowrap;}
+.beta-banner-full{display:inline;}
+.beta-banner-short{display:none;}
+.beta-banner-close{
+  flex-shrink:0;
+  width:24px;height:24px;
+  min-width:24px;min-height:24px;
+  background:none;
+  border:1px solid rgba(255,255,255,.4);
+  color:#fff;
+  border-radius:50%;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;
+  padding:0;
+  line-height:1;
+  transition:background .15s;
+}
+.beta-banner-close:hover{background:rgba(255,255,255,.15);}
+.beta-banner-close:active{background:rgba(255,255,255,.25);}
+
+/* Mobile: show short version, keep X tappable */
+@media (max-width:768px){
+  .beta-banner{padding:var(--sp2) var(--sp3);gap:var(--sp2);font-size:10px;}
+  .beta-banner-full{display:none;}
+  .beta-banner-short{display:inline;}
+  .beta-banner-close{width:28px;height:28px;min-width:28px;min-height:28px;font-size:12px;}
+}
 </style>
 </head>
 <body>
-<div id="beta-banner" style="display:none;background:linear-gradient(90deg, #B8860B 0%, #D4A017 100%);color:#fff;padding:var(--sp2) var(--sp4);font-size:11px;font-family:var(--mono);letter-spacing:.03em;display:flex;align-items:center;justify-content:center;gap:var(--sp3);position:relative;z-index:110;">
-  <span>⚠ <strong>VERSÃO BETA</strong> · Uso confidencial — toda a informação é coberta por acordo implícito de confidencialidade. <a href="#" onclick="event.preventDefault();goView('sobre');" style="color:#fff;text-decoration:underline;font-weight:600;">Ver detalhes →</a></span>
-  <button onclick="dismissBetaBanner()" title="Ocultar" style="background:none;border:1px solid rgba(255,255,255,.4);color:#fff;width:20px;height:20px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;padding:0;line-height:1;">✕</button>
+<div id="beta-banner" class="beta-banner hidden">
+  <div class="beta-banner-text">
+    <span class="beta-banner-full">⚠ <strong>VERSÃO BETA</strong> · Uso confidencial — toda a informação é coberta por acordo implícito de confidencialidade. <a href="#" onclick="event.preventDefault();goView('sobre');">Ver detalhes →</a></span>
+    <span class="beta-banner-short">⚠ <strong>BETA</strong> · <a href="#" onclick="event.preventDefault();goView('sobre');">Uso confidencial →</a></span>
+  </div>
+  <button class="beta-banner-close" onclick="dismissBetaBanner()" title="Ocultar" aria-label="Ocultar banner">✕</button>
 </div>
 
 <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
@@ -4756,13 +4810,13 @@ function saveOfficialISV(){
   const shouldShow = !dismissed || (Date.now() - dismissedAt > sevenDays);
   const banner = document.getElementById('beta-banner');
   if(banner && shouldShow){
-    banner.style.display = 'flex';
+    banner.classList.remove('hidden');
   }
 })();
 
 function dismissBetaBanner(){
   const banner = document.getElementById('beta-banner');
-  if(banner) banner.style.display = 'none';
+  if(banner) banner.classList.add('hidden');
   localStorage.setItem('ai_beta_dismissed', Date.now().toString());
 }
 
