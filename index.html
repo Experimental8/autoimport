@@ -314,16 +314,21 @@ td.editing input{width:100%;background:#fff;border:2px solid var(--accent);color
 
 /* ── DARK MODE ────────────────────────── */
 body.dark{
-  --bg:#0A1628; --surface:#0F1E3C; --surface2:#152B52;
-  --border:#1E3A6B; --border2:#162E56;
-  --ink:#E6EDF7; --ink2:#B8CCE4; --ink3:#7A90B0;
-  --accent:#6FA5E5; --accent-l:#152B52;
-  --green:#5DCAA5; --green-l:#0F2318;
-  --amber:#E8B84B; --amber-l:#2B1F0A;
-  --red:#F09595; --red-l:#3A1212;
-  --blue:#6FA5E5; --blue-l:#152B52;
-  --gold:#E8B84B; --gold-l:#2B1F0A;
+  /* Opção B · Navy suave (menos saturado, feel Linear) */
+  --bg:#121B2A; --surface:#1A2538; --surface2:#243044;
+  --border:#2C3A52; --border2:#1F2A3E;
+  --ink:#F5F7FB; --ink2:#D0D8E4; --ink3:#8FA4BE;
+  --accent:#D4A017; --accent-l:#2B2414;
+  --green:#5DCAA5; --green-l:#142A24;
+  --amber:#E8B84B; --amber-l:#2B2414;
+  --red:#F09595; --red-l:#2E1C1C;
+  --blue:#7BB0EC; --blue-l:#1A2538;
+  --gold:#D4A017; --gold-l:#2B2414;
 }
+
+/* Dark mode: page titles dourados, card titles em branco */
+body.dark .page-title{color:var(--gold);}
+body.dark .card-title{color:var(--ink);}
 body.dark .sidebar{background:#061020;}
 body.dark .topbar{background:var(--surface);border-color:var(--border);}
 body.dark .card{background:var(--surface);border-color:var(--border);box-shadow:0 1px 3px rgba(0,0,0,.3);}
