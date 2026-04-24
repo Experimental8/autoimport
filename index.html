@@ -2235,6 +2235,9 @@ function renderHistorico(){
     div.className='analysis-card';
     const carCount = a.cars?.length ?? a.carCount ?? a.count ?? 0;
     const avgScore = a.avgScore != null ? a.avgScore : '—';
+    const nc = getAnalysisNotifCount(a.id);
+    const syncOn = a.syncEnabled && a.searchUrls?.length > 0;
+    const serverOk = !!getServerUrl();
     div.innerHTML=`
       <button class="ac-del" onclick="deleteAnalysis(event,${i})" title="Apagar análise">✕</button>
       <div class="ac-title" contenteditable="true"
@@ -2247,7 +2250,41 @@ function renderHistorico(){
       <div class="ac-stats" style="margin-top:var(--sp3);">
         <div class="ac-stat"><div class="ac-stat-val">${carCount}</div><div class="ac-stat-label">Carros</div></div>
         <div class="ac-stat"><div class="ac-stat-val">${avgScore}</div><div class="ac-stat-label">Score Médio</div></div>
-      </div>`;
+      </div>
+      ${nc > 0 ? `<div style="margin-top:var(--sp2);display:inline-flex;align-items:center;gap:5px;background:#FEE2E2;color:#B91C1C;font-size:10px;font-weight:600;padding:3px 8px;border-radius:var(--r-pill);">🔔 ${nc} novo${nc>1?'s':''}</div>` : ''}
+      ${serverOk ? `
+      <div style="margin-top:var(--sp3);padding-top:var(--sp3);border-top:0.5px solid var(--border2);" onclick="event.stopPropagation()">
+        <div style="display:flex;align-items:center;gap:var(--sp2);margin-bottom:var(--sp2);">
+          <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;flex:1;">
+            <input type="checkbox" id="sync-check-${i}" ${syncOn?'checked':''} onchange="toggleSyncAnalysis(${i},this.checked)" style="accent-color:var(--accent);">
+            <span style="font-weight:500;">Sync automático</span>
+          </label>
+          ${syncOn ? '<span style="font-size:10px;color:var(--green);">● activo</span>' : '<span style="font-size:10px;color:var(--ink3);">○ inactivo</span>'}
+        </div>
+        <div id="sync-fields-${i}" style="display:${syncOn?'':'none'};">
+          <div style="display:grid;grid-template-columns:1fr 60px;gap:var(--sp2);margin-bottom:var(--sp2);">
+            <div>
+              <div style="font-size:10px;color:var(--ink3);margin-bottom:3px;">URLs (AS24 / MDE) — um por linha</div>
+              <textarea id="sync-urls-${i}" rows="2" onclick="event.stopPropagation()"
+                style="width:100%;font-family:var(--mono);font-size:10px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r);resize:vertical;color:var(--ink);background:var(--surface);"
+                placeholder="https://www.autoscout24.com/lst/...&#10;https://suchen.mobile.de/..."
+              >${(a.searchUrls||[]).map(u=>u.url).join('\n')}</textarea>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--ink3);margin-bottom:3px;">Score mín.</div>
+              <input type="number" id="sync-score-${i}" value="${a.minScore||7}" min="1" max="10" onclick="event.stopPropagation()"
+                style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r);font-family:var(--mono);font-size:12px;color:var(--ink);">
+            </div>
+          </div>
+          <div style="margin-bottom:var(--sp2);">
+            <div style="font-size:10px;color:var(--ink3);margin-bottom:3px;">Canal ntfy</div>
+            <input type="text" id="sync-ntfy-${i}" value="${a.ntfyChannel||''}" onclick="event.stopPropagation()"
+              style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r);font-family:var(--mono);font-size:11px;color:var(--ink);"
+              placeholder="o_teu_canal_ntfy">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveSyncConfig(event,${i})" style="width:100%;">Guardar sync</button>
+        </div>
+      </div>` : ''}`;
     div.dataset.idx = i;
     div.addEventListener('click', function(e) {
       if(e.target.closest('[contenteditable]') || e.target.closest('.ac-del')) return;
