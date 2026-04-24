@@ -41,7 +41,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:13p
 .nav-item:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.85);}
 .nav-item.active{background:rgba(255,255,255,.15);color:#fff;border-left:3px solid #D4A017;padding-left:calc(var(--sp3) - 3px);}
 .nav-icon{font-size:14px;flex-shrink:0;width:18px;text-align:center;}
-.nav-badge{margin-left:auto;background:rgba(255,255,255,.2);color:#fff;font-size:9px;padding:2px 6px;border-radius:var(--r-pill);min-width:18px;text-align:center;}
+.nav-badge{margin-left:auto;color:#fff;font-size:9px;padding:2px 6px;border-radius:var(--r-pill);min-width:18px;text-align:center;background:rgba(255,255,255,.2);}
 .sidebar-footer{padding:var(--sp3) var(--sp4);border-top:1px solid rgba(255,255,255,.08);font-size:10px;color:rgba(255,255,255,.2);}
 .main{margin-left:220px;flex:1;min-width:0;}
 .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:var(--sp4) var(--sp5);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
@@ -643,6 +643,20 @@ td.editing input{width:100%;background:#fff;border:2px solid var(--accent);color
     </div>
 
     <!-- ══════════ CONFIGURAÇÕES ══════════ -->
+    <div class="view" id="view-notificacoes">
+      <div class="topbar">
+        <div><div class="page-title">Notificações</div><div class="page-sub">Últimos 7 dias</div></div>
+        <button class="btn btn-ghost btn-sm" onclick="markAllNotifsRead()">✓ Marcar todas como lidas</button>
+      </div>
+      <div class="content">
+        <div id="notif-empty" class="empty hidden">
+          <div class="empty-icon">🔔</div>
+          <div class="empty-text">Sem notificações nos últimos 7 dias.<br>Activa o sync automático numa análise para receberes alertas.</div>
+        </div>
+        <div id="notif-list"></div>
+      </div>
+    </div>
+
     <div class="view" id="view-config">
 
       <!-- API Keys -->
@@ -802,6 +816,7 @@ const DEF_CFG = {
 };
 let cfg = JSON.parse(localStorage.getItem('ai_cfg2')||'null') || DEF_CFG;
 let favs     = JSON.parse(localStorage.getItem('ai_favs')     || '[]');
+let notificacoes = [];
 let analyses = JSON.parse(localStorage.getItem('ai_analyses') || '[]');
 
 // Current analysis state
@@ -840,6 +855,7 @@ function goView(id){
   if(id==='config')renderConfig();
   if(id==='dashboard')renderDashboard();
   if(id==='historico')renderHistorico();
+  if(id==='notificacoes')renderNotificacoes();
   if(id==='favoritos')renderFavoritos();
   closeSidebar();
 }
@@ -3419,6 +3435,111 @@ function resetAndNewAnalise(){
   goView('analise');
 }
 
+// ══════════════════════════════════════════════
+// NOTIFICAÇÕES
+// ══════════════════════════════════════════════
+async function loadNotificacoes(){
+  const serverUrl = getServerUrl();
+  if(!serverUrl){ notificacoes = []; return; }
+  try{
+    const resp = await fetch(serverUrl + '/notifications');
+    if(resp.ok) notificacoes = await resp.json();
+    else notificacoes = [];
+  } catch{ notificacoes = []; }
+  updateNotifBadge();
+}
+
+function updateNotifBadge(){
+  const unread = notificacoes.filter(n => !n.read).length;
+  const badge = document.getElementById('notif-badge');
+  if(!badge) return;
+  if(unread > 0){
+    badge.textContent = unread;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+function renderNotificacoes(){
+  loadNotificacoes().then(() => {
+    const list = document.getElementById('notif-list');
+    const empty = document.getElementById('notif-empty');
+    if(!list) return;
+
+    if(!notificacoes.length){
+      empty?.classList.remove('hidden');
+      list.innerHTML = '';
+      return;
+    }
+    empty?.classList.add('hidden');
+
+    // Group by date
+    const sorted = [...notificacoes].sort((a,b) => new Date(b.ts) - new Date(a.ts));
+    list.innerHTML = sorted.map(n => {
+      const date = new Date(n.ts);
+      const dateStr = date.toLocaleDateString('pt-PT', {day:'2-digit',month:'short'});
+      const timeStr = date.toLocaleTimeString('pt-PT', {hour:'2-digit',minute:'2-digit'});
+      const analysis = n.analysisId ? analyses.find(a => a.id === n.analysisId) : null;
+      const analysisName = analysis?.name || '';
+      const isNew = !n.read ? 'border-left:3px solid #B91C1C;' : '';
+      const bgNew = !n.read ? 'background:var(--surface2);' : '';
+
+      return `<div onclick="openNotification(${n.id})" style="cursor:pointer;padding:var(--sp3) var(--sp4);border:0.5px solid var(--border);border-radius:var(--r-lg);margin-bottom:var(--sp2);${bgNew}${isNew}transition:all .15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='${n.read ? 'var(--border)' : '#B91C1C'}'">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--sp3);">
+          <div style="flex:1;">
+            <div style="font-family:var(--syne);font-size:13px;font-weight:600;color:var(--accent);margin-bottom:4px;">${n.title}</div>
+            <div style="font-size:11px;color:var(--ink2);line-height:1.5;white-space:pre-line;">${n.message}</div>
+            ${analysisName ? `<div style="margin-top:6px;font-size:10px;color:var(--ink3);">→ ${analysisName}</div>` : ''}
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-size:10px;color:var(--ink3);">${dateStr}</div>
+            <div style="font-size:10px;color:var(--ink3);">${timeStr}</div>
+            ${!n.read ? '<div style="width:8px;height:8px;border-radius:50%;background:#B91C1C;margin:4px 0 0 auto;"></div>' : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  });
+}
+
+async function openNotification(id){
+  const n = notificacoes.find(n => n.id === id);
+  if(!n) return;
+
+  // Mark as read
+  n.read = true;
+  updateNotifBadge();
+  const serverUrl = getServerUrl();
+  if(serverUrl) fetch(serverUrl + '/notifications/read/' + id, {method:'POST'}).catch(()=>{});
+
+  // Navigate to analysis if linked
+  if(n.analysisId){
+    const idx = analyses.findIndex(a => a.id === n.analysisId);
+    if(idx >= 0){
+      const fakeEvent = {stopPropagation:()=>{}};
+      loadAnalysis(fakeEvent, idx);
+      return;
+    }
+  }
+  // Re-render to update read state
+  renderNotificacoes();
+}
+
+async function markAllNotifsRead(){
+  notificacoes.forEach(n => n.read = true);
+  updateNotifBadge();
+  renderNotificacoes();
+  const serverUrl = getServerUrl();
+  if(serverUrl) fetch(serverUrl + '/notifications/read', {method:'POST'}).catch(()=>{});
+}
+
+function getAnalysisNotifCount(analysisId){
+  return notificacoes.filter(n => n.analysisId === analysisId && !n.read).length;
+}
+
+// Refresh notifications every 5 minutes
+setInterval(() => { if(getServerUrl()) loadNotificacoes(); }, 5 * 60 * 1000);
 </script>
 </body>
 </html>
