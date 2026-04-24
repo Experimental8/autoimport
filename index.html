@@ -884,7 +884,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
             <button class="btn btn-primary btn-sm" onclick="saveApiKey(document.getElementById('api-key-input').value)">Guardar</button>
             <button class="btn btn-ghost btn-sm" onclick="toggleApiKeyVisibility()">👁</button>
           </div>
-          <div id="api-key-status" style="font-size:11px;margin-top:4px;"></div>
+          <div id="api-key-status" style="font-size:11px;margin-top:6px;margin-bottom:16px;"></div>
           <div style="font-size:11px;font-weight:600;margin-bottom:6px;">Apify (pesquisa automática)</div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <input type="password" id="apify-key-input" placeholder="apify_api_..."
@@ -892,7 +892,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
               onchange="saveApifyKey(this.value)">
             <button class="btn btn-primary btn-sm" onclick="saveApifyKey(document.getElementById('apify-key-input').value)">Guardar</button>
           </div>
-          <div id="apify-key-status" style="margin-top:6px;font-size:11px;"></div>
+          <div id="apify-key-status" style="font-size:11px;margin-top:6px;margin-bottom:16px;"></div>
           <div style="font-size:11px;font-weight:600;margin-top:14px;margin-bottom:6px;">Brave Search (pesquisa CO₂/cilindrada)</div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <input type="password" id="brave-key-input" placeholder="BSA..."
@@ -901,7 +901,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
             <button class="btn btn-primary btn-sm" onclick="saveBraveKey(document.getElementById('brave-key-input').value)">Guardar</button>
             <button class="btn btn-ghost btn-sm" onclick="validateApiKey('brave')" title="Testar a key guardada">🧪 Testar</button>
           </div>
-          <div id="brave-key-status" style="margin-top:6px;font-size:11px;"></div>
+          <div id="brave-key-status" style="font-size:11px;margin-top:6px;margin-bottom:16px;"></div>
           <div style="font-size:11px;font-weight:600;margin-top:14px;margin-bottom:6px;">Servidor de Sync (Railway)</div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <input type="text" id="server-url-input" placeholder="https://autoimport-server.railway.app"
