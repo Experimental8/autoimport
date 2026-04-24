@@ -266,8 +266,8 @@ td.editing input{width:100%;background:#fff;border:2px solid var(--accent);color
 
 /* ── RESPONSIVE ── */
 @media(max-width:768px){
-  .back-txt{display:none;}
-  #back-btn{padding:6px 10px;min-width:36px;justify-content:center;}
+  .back-txt,.new-txt{display:none;}
+  #back-btn,#topbar-new-btn{padding:6px 10px;min-width:36px;justify-content:center;font-size:16px;font-weight:600;}
   .sidebar{transform:translateX(-220px);}
   .sidebar.open{transform:translateX(0);}
   .main{margin-left:0;}
@@ -517,7 +517,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
         <div class="page-sub" id="pg-sub">Resumo e favoritos</div>
       </div>
     </div>
-    <button class="btn btn-primary btn-sm" id="topbar-new-btn" onclick="resetAndNewAnalise()">+ Nova Análise</button>
+    <button class="btn btn-primary btn-sm" id="topbar-new-btn" onclick="resetAndNewAnalise()"><span>+</span><span class="new-txt"> Nova Análise</span></button>
   </div>
 
   <div class="content">
