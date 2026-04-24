@@ -529,11 +529,14 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
 
     <!-- ══════════ DASHBOARD ══════════ -->
     <div class="view active" id="view-dashboard">
-      <div style="display:flex;justify-content:flex-end;gap:var(--sp2);margin-bottom:var(--sp4);">
-        <button class="btn btn-ghost btn-sm" onclick="exportarDados()" title="Exporta todas as análises e favoritos para partilhar">↑ Exportar dados</button>
-        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('import-input').click()" title="Importa dados partilhados por outro utilizador">↓ Importar dados</button>
+      <div style="display:flex;justify-content:flex-end;gap:var(--sp2);margin-bottom:var(--sp4);flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" onclick="uploadBackupToServer()" title="Envia os teus dados para o servidor. Outros dispositivos ligados ao mesmo servidor vão receber uma notificação.">☁↑ Enviar backup</button>
+        <button class="btn btn-ghost btn-sm" onclick="checkAndDownloadBackup()" title="Verifica e descarrega o backup mais recente do servidor">☁↓ Sincronizar do servidor</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportarDados()" title="Exporta todas as análises e favoritos para partilhar por ficheiro">↑ Exportar ficheiro</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('import-input').click()" title="Importa dados de um ficheiro JSON">↓ Importar ficheiro</button>
         <input type="file" id="import-input" accept=".json" style="display:none;" onchange="importarDados(this)">
       </div>
+      <div id="backup-status" style="text-align:right;font-size:11px;color:var(--ink3);margin-top:-10px;margin-bottom:var(--sp3);min-height:14px;"></div>
 <!-- stats removed per user request -->
       <div class="card">
         <div class="card-hdr"><div class="card-title">♥ Favoritos</div><button class="btn btn-ghost btn-sm" onclick="goView('favoritos')">Ver todos →</button></div>
@@ -1492,7 +1495,59 @@ function goView(id){
   if(id==='notificacoes')renderNotificacoes();
   if(id==='sobre')renderSobre();
   if(id==='favoritos')renderFavoritos();
+
+  // Auto-restore state when returning to 'analise' view
+  if(id==='analise'){
+    const step4Visible = !document.getElementById('wf-step4')?.classList.contains('hidden');
+
+    // Case 1: calcRows has data but UI is on step 1 (user navigated away and UI was reset)
+    if(calcRows.length > 0 && !step4Visible){
+      // Silent restore — the data is still in memory, just fix the UI
+      document.getElementById('wf-step1')?.classList.add('hidden');
+      document.getElementById('wf-step2')?.classList.add('hidden');
+      document.getElementById('wf-step3')?.classList.add('hidden');
+      document.getElementById('wf-step4')?.classList.remove('hidden');
+      ['ws1','ws2','ws3'].forEach(wid => {
+        document.getElementById(wid)?.classList.remove('active');
+        document.getElementById(wid)?.classList.add('done');
+      });
+      document.getElementById('ws4')?.classList.add('active');
+      renderMarketHeader();
+      renderResults();
+    }
+    // Case 2: calcRows is empty but there's a saved session — offer restore
+    else if(calcRows.length === 0){
+      const session = loadCurrentSession();
+      if(session && session.cars?.length > 0){
+        showRestoreBanner(session);
+      }
+    }
+  }
+
   closeSidebar();
+}
+
+function showRestoreBanner(session){
+  // Remove existing banner
+  document.getElementById('restore-banner')?.remove();
+  const view = document.getElementById('view-analise');
+  if(!view) return;
+  const banner = document.createElement('div');
+  banner.id = 'restore-banner';
+  banner.style.cssText = 'background:linear-gradient(90deg, var(--green-l) 0%, var(--accent-l) 100%);border:1px solid var(--green);border-radius:var(--r);padding:var(--sp3) var(--sp4);margin:var(--sp3) 0;display:flex;align-items:center;justify-content:space-between;gap:var(--sp3);flex-wrap:wrap;';
+  const age = Math.round((Date.now() - session.ts) / 60000);
+  const ageText = age < 60 ? age + ' min atrás' : Math.round(age/60) + 'h atrás';
+  banner.innerHTML = `
+    <div>
+      <div style="font-weight:600;color:var(--green);font-size:13px;margin-bottom:2px;">💾 Análise não guardada disponível</div>
+      <div style="font-size:11px;color:var(--ink2);">"${session.name}" · ${session.cars.length} carros · ${ageText}</div>
+    </div>
+    <div style="display:flex;gap:var(--sp2);">
+      <button class="btn btn-primary btn-sm" onclick="restoreCurrentSession();document.getElementById('restore-banner')?.remove();">↻ Restaurar</button>
+      <button class="btn btn-ghost btn-sm" onclick="if(confirm('Descartar análise guardada?')){clearCurrentSession();document.getElementById('restore-banner')?.remove();}">✕ Descartar</button>
+    </div>
+  `;
+  view.insertBefore(banner, view.firstChild);
 }
 
 function goBack(){
@@ -1977,6 +2032,7 @@ async function startProcessing(){
     log('Match SV', `${matchedCount}/${processedOrigin.length} carros com preço de referência específico por modelo/ano`, 'ok');
   }
   calcRows=processedOrigin.map(r=>({...r,...calcMarg(r)}));
+  saveCurrentSession();  // persist immediately after processing completes
   document.getElementById('ov-legal').value=getLegalTotal();
   document.getElementById('wf-step3').classList.add('hidden');
   document.getElementById('wf-step4').classList.remove('hidden');
@@ -1992,7 +2048,95 @@ async function startProcessing(){
   }
 }
 
+
+// ══════════════════════════════════════════════
+// CURRENT SESSION — salvaguarda análise actual (evita perda de dados)
+// ══════════════════════════════════════════════
+function saveCurrentSession(){
+  if(!calcRows?.length) return;  // nada para guardar
+  try{
+    const session = {
+      ts: Date.now(),
+      name: document.getElementById('analysis-name')?.value || 'Análise sem nome',
+      cars: calcRows,
+      eliminados: eliminatedRows,
+      market: svMarket,
+      svRows: files.sv?.rows || [],
+      svSelected: svSelectedRows,
+      files: {
+        as24: files.as24,
+        mde: files.mde,
+        sv: files.sv ? {name: files.sv.name, rows: files.sv.rows} : null
+      }
+    };
+    localStorage.setItem('ai_current_session', JSON.stringify(session));
+  } catch(e){ /* storage full */ }
+}
+
+function loadCurrentSession(){
+  try{
+    const raw = localStorage.getItem('ai_current_session');
+    if(!raw) return null;
+    const s = JSON.parse(raw);
+    // Expire after 48h
+    if(Date.now() - s.ts > 7 * 24 * 60 * 60 * 1000){
+      localStorage.removeItem('ai_current_session');
+      return null;
+    }
+    return s;
+  } catch(e){ return null; }
+}
+
+function restoreCurrentSession(){
+  const s = loadCurrentSession();
+  if(!s) return false;
+  calcRows = s.cars || [];
+  eliminatedRows = s.eliminados || [];
+  svMarket = s.market || {};
+  svSelectedRows = s.svSelected || [];
+  if(s.files){
+    files.as24 = s.files.as24;
+    files.mde = s.files.mde;
+    files.sv = s.files.sv;
+  }
+  const nameInput = document.getElementById('analysis-name');
+  if(nameInput && s.name) nameInput.value = s.name;
+  // Jump to step 4 (results)
+  document.getElementById('wf-step1')?.classList.add('hidden');
+  document.getElementById('wf-step2')?.classList.add('hidden');
+  document.getElementById('wf-step3')?.classList.add('hidden');
+  document.getElementById('wf-step4')?.classList.remove('hidden');
+  ['ws1','ws2','ws3'].forEach(id => {
+    document.getElementById(id)?.classList.remove('active');
+    document.getElementById(id)?.classList.add('done');
+  });
+  document.getElementById('ws4')?.classList.add('active');
+  renderMarketHeader();
+  renderResults();
+  showToast('✓ Análise restaurada', calcRows.length + ' carros recuperados', 'success');
+  return true;
+}
+
+function clearCurrentSession(){
+  localStorage.removeItem('ai_current_session');
+}
+
+function hasUnsavedWork(){
+  if(!calcRows?.length) return false;
+  const name = document.getElementById('analysis-name')?.value;
+  if(!name) return true;
+  // Check if saved analysis with same name exists and has the same data
+  const existing = analyses.find(a => a.name === name);
+  if(!existing) return true;
+  // Quick check: same car count
+  if((existing.cars?.length || 0) !== calcRows.length) return true;
+  return false;
+}
+
 function autoSaveCurrentAnalysis(){
+  // Always save current session to localStorage (even if not named/saved yet)
+  saveCurrentSession();
+
   const name = document.getElementById('analysis-name')?.value;
   if(!name) return;
   // Find existing saved analysis with same name and update it
@@ -2766,6 +2910,8 @@ function renderMarketHeader(){
 }
 
 function renderResults(){
+  // Auto-save session on every render (cheap, redundant safety)
+  saveCurrentSession();
   let filtered = [...calcRows];
 
   // Apply filters
@@ -2893,6 +3039,7 @@ function applyNormaOverride(norma){
   // Update modal if open
   const modalNormaEl = document.querySelector('#modal-detail-grid select[data-field="co2_norma"]');
   if(modalNormaEl) modalNormaEl.value = norma;
+  saveCurrentSession();
 }
 
 function recalcResults(){
@@ -2907,6 +3054,7 @@ function recalcResults(){
     return {...rWithNorma, ...calcMarg(rWithNorma)};
   });
   renderResults();
+  saveCurrentSession();
 }
 
 // ══════════════════════════════════════════════
@@ -3157,6 +3305,7 @@ function toggleFav(e,i){
   })[0]||calcRows[i];
   toggleFavDirect(r);
   renderResults();
+  saveCurrentSession();
 }
 
 function toggleFavDirect(r){
@@ -3758,6 +3907,7 @@ function eliminarCarro(e, i){
   }
   renderResults();
   renderEliminados();
+  saveCurrentSession();
 }
 
 function restaurarCarro(e, i){
@@ -3875,6 +4025,7 @@ Escolhe o modo:
       if(dados.cfg && !localStorage.getItem('ai_cfg2')){
         cfg = dados.cfg;
         localStorage.setItem('ai_cfg2', JSON.stringify(cfg));
+    localStorage.setItem('ai_backup_version_seen', String(meta.version));
       }
 
       updateBadges();
@@ -3910,6 +4061,185 @@ Escolhe o modo:
     }
   };
   reader.readAsText(file, 'UTF-8');
+}
+
+// ══════════════════════════════════════════════
+// BACKUP SYNC — sync via servidor (sem ficheiros)
+// ══════════════════════════════════════════════
+async function uploadBackupToServer(){
+  const serverUrl = getServerUrl();
+  if(!serverUrl){
+    showToast('Servidor em falta', 'Configura URL do servidor nas Configurações', 'warn');
+    return;
+  }
+
+  const payload = {
+    versao: '1.0',
+    exportadoEm: new Date().toISOString(),
+    analyses,
+    favs,
+    cfg
+  };
+
+  // Use first sync'd analysis's ntfy channel for notification (any channel works)
+  const ntfyChannel = analyses.find(a => a.ntfyChannel)?.ntfyChannel || '';
+  const uploader = navigator.userAgent.includes('Mobile') ? 'Telemóvel' : 'PC';
+
+  const sizeKB = Math.round(JSON.stringify(payload).length / 1024);
+  const statusEl = document.getElementById('backup-status');
+
+  if(statusEl) statusEl.textContent = `⏳ A enviar backup (${sizeKB} KB)...`;
+
+  try{
+    const resp = await fetch(serverUrl + '/backup', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        payload,
+        uploader,
+        ntfyChannel,
+        clickUrl: location.origin + location.pathname
+      })
+    });
+
+    if(resp.ok){
+      const data = await resp.json();
+      showToast('✓ Backup enviado', `Versão ${data.version} · ${sizeKB} KB${ntfyChannel ? ' · Notificação enviada' : ''}`, 'success');
+      if(statusEl){
+        const d = new Date(data.uploadedAt);
+        statusEl.textContent = `✓ Último upload: ${d.toLocaleString('pt-PT')} · v${data.version} · ${sizeKB} KB`;
+      }
+      localStorage.setItem('ai_backup_version_seen', String(data.version));
+    } else {
+      showToast('Erro ao enviar', 'Servidor respondeu ' + resp.status, 'error');
+      if(statusEl) statusEl.textContent = '✗ Falha no upload (' + resp.status + ')';
+    }
+  } catch(e){
+    showToast('Erro de rede', 'Não foi possível contactar o servidor', 'error');
+    if(statusEl) statusEl.textContent = '✗ Erro: ' + e.message;
+  }
+}
+
+async function checkAndDownloadBackup(){
+  const serverUrl = getServerUrl();
+  if(!serverUrl){
+    showToast('Servidor em falta', 'Configura URL do servidor nas Configurações', 'warn');
+    return;
+  }
+
+  const statusEl = document.getElementById('backup-status');
+  if(statusEl) statusEl.textContent = '⏳ A verificar servidor...';
+
+  try{
+    // First, lightweight meta check
+    const metaResp = await fetch(serverUrl + '/backup/meta');
+    if(!metaResp.ok){
+      showToast('Erro', 'Não foi possível contactar servidor (' + metaResp.status + ')', 'error');
+      if(statusEl) statusEl.textContent = '✗ Servidor não respondeu';
+      return;
+    }
+    const meta = await metaResp.json();
+    if(!meta.exists){
+      showToast('Sem backup', 'Ainda não há nenhum backup no servidor. Usa "Enviar backup" primeiro.', 'info');
+      if(statusEl) statusEl.textContent = '○ Nenhum backup disponível';
+      return;
+    }
+
+    const ageMin = Math.round((Date.now() - meta.uploadedAt) / 60000);
+    const ageTxt = ageMin < 60 ? ageMin + ' min atrás' : Math.round(ageMin/60) + 'h atrás';
+    const sizeKB = Math.round(meta.sizeBytes / 1024);
+
+    const confirmed = confirm(
+      `📦 Backup disponível:\n\n` +
+      `• Enviado por: ${meta.uploadedBy}\n` +
+      `• Versão: ${meta.version}\n` +
+      `• Tamanho: ${sizeKB} KB\n` +
+      `• Quando: ${ageTxt}\n\n` +
+      `⚠ Ao sincronizar, os dados locais serão SUBSTITUÍDOS pelo backup.\n` +
+      `Os teus favoritos e análises actuais serão perdidos se não existirem no backup.\n\n` +
+      `Continuar?`
+    );
+    if(!confirmed){
+      if(statusEl) statusEl.textContent = '○ Sincronização cancelada';
+      return;
+    }
+
+    // Full download
+    if(statusEl) statusEl.textContent = '⏳ A descarregar backup (' + sizeKB + ' KB)...';
+    const resp = await fetch(serverUrl + '/backup');
+    if(!resp.ok){
+      showToast('Erro', 'Falha no download (' + resp.status + ')', 'error');
+      return;
+    }
+    const backup = await resp.json();
+    const payload = backup.payload;
+
+    if(!payload || !payload.versao){
+      showToast('Backup inválido', 'Formato não reconhecido', 'error');
+      return;
+    }
+
+    // REPLACE local state (not merge — intentional for simplicity)
+    analyses = payload.analyses || [];
+    favs = payload.favs || [];
+    if(payload.cfg) cfg = payload.cfg;
+
+    localStorage.setItem('ai_analyses', JSON.stringify(analyses));
+    localStorage.setItem('ai_favs', JSON.stringify(favs));
+    localStorage.setItem('ai_cfg2', JSON.stringify(cfg));
+
+    // Re-push sync'd analyses to server (so the current device is tracked)
+    const toSync = analyses.filter(a => a.syncEnabled && a.searchUrls?.length > 0);
+    toSync.forEach(a => {
+      fetch(serverUrl + '/analyses', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          id: a.id, name: a.name,
+          syncEnabled: a.syncEnabled,
+          minScore: a.minScore || 7,
+          ntfyChannel: a.ntfyChannel || '',
+          searchUrls: a.searchUrls || [],
+        }),
+      }).catch(() => {});
+    });
+
+    updateBadges();
+    renderDashboard();
+    showToast('✓ Sincronizado', `${analyses.length} análises, ${favs.length} favoritos`, 'success');
+    if(statusEl){
+      const d = new Date(meta.uploadedAt);
+      statusEl.textContent = `✓ Sincronizado · v${meta.version} · ${d.toLocaleString('pt-PT')}`;
+    }
+
+  } catch(e){
+    showToast('Erro', e.message, 'error');
+    if(statusEl) statusEl.textContent = '✗ Erro: ' + e.message;
+  }
+}
+
+// Check on page load if a newer backup exists (silent check)
+async function checkBackupOnLoad(){
+  const serverUrl = getServerUrl();
+  if(!serverUrl) return;
+  try{
+    const resp = await fetch(serverUrl + '/backup/meta');
+    if(!resp.ok) return;
+    const meta = await resp.json();
+    if(!meta.exists) return;
+
+    // Get last-known local backup version
+    const lastKnown = parseInt(localStorage.getItem('ai_backup_version_seen') || '0');
+    if(meta.version <= lastKnown) return;
+
+    // There's a newer version — show status
+    const statusEl = document.getElementById('backup-status');
+    if(statusEl){
+      const ageMin = Math.round((Date.now() - meta.uploadedAt) / 60000);
+      const ageTxt = ageMin < 60 ? ageMin + ' min atrás' : Math.round(ageMin/60) + 'h atrás';
+      statusEl.innerHTML = `<span style="color:var(--accent);font-weight:500;">📦 Backup novo disponível (v${meta.version} · ${ageTxt} por ${meta.uploadedBy}) — carrega em "Sincronizar"</span>`;
+    }
+  } catch(e){ /* silent */ }
 }
 
 // ══════════════════════════════════════════════
@@ -4216,7 +4546,7 @@ async function fetchSVFromUrl(){
   if(status) status.textContent='A pesquisar no StandVirtual...';
   try{
     const maxItems = 100;
-    const rows = await runApifyActor(APIFY_ACTORS.sv, {startUrls:[{url}], maxItems}, maxItems);
+    const rows = await runApifyActor(APIFY_ACTORS.sv, {input_url: url, maxItems}, maxItems);
     files.sv = {rows, name:'StandVirtual ('+rows.length+')'};
     svSelectedRows = rows.map((_,i)=>i);
     document.getElementById('pill-sv')?.classList.remove('hidden');
@@ -4275,6 +4605,22 @@ function initConfigStatus(){
 }
 
 function resetAndNewAnalise(){
+  // Prevent accidental loss of unsaved work
+  if(hasUnsavedWork()){
+    const choice = confirm(
+      '⚠ Tens uma análise não guardada com ' + calcRows.length + ' carros.\n\n' +
+      'Iniciar uma nova análise vai descartar este trabalho.\n\n' +
+      'Queres continuar? (OK = descartar, Cancelar = manter)'
+    );
+    if(!choice){
+      // User chose to keep — just navigate back to results
+      goView('analise');
+      return;
+    }
+  }
+  // Clear the session too
+  clearCurrentSession();
+
   // Reset all state
   files = {as24:null, mde:null, sv:null};
   calcRows = [];
@@ -4421,13 +4767,91 @@ setTimeout(checkResumeAnalysis, 800);
 
 // Refresh notifications every 5 minutes
 setInterval(() => { if(getServerUrl()) loadNotificacoes(); }, 5 * 60 * 1000);
+// Send a confirmation notification to ntfy channel
+async function sendSyncConfirmationNotification(channel, analysisName){
+  if(!channel) return false;
+  try{
+    const resp = await fetch('https://ntfy.sh/' + encodeURIComponent(channel), {
+      method: 'POST',
+      headers: {
+        'Title': '✓ Sync activado: ' + analysisName,
+        'Priority': 'default',
+        'Tags': 'white_check_mark,bell'
+      },
+      body: 'Vais receber notificações 4x/dia (08h, 12h, 14h30, 17h30) quando aparecerem novos anúncios ou descidas de preço.'
+    });
+    return resp.ok;
+  } catch(e){
+    console.warn('ntfy notification failed:', e.message);
+    return false;
+  }
+}
+
 function toggleSyncAnalysis(i, enabled){
   const a = analyses[i];
   if(!a) return;
   a.syncEnabled = enabled;
+
+  // Persist immediately to localStorage
+  localStorage.setItem('ai_analyses', JSON.stringify(analyses));
+
   // Show/hide fields
   const fields = document.getElementById('sync-fields-' + i);
   if(fields) fields.style.display = enabled ? '' : 'none';
+
+  // Update status indicator
+  const statusSpan = fields?.previousElementSibling?.querySelector('span[style*="color"]');
+
+  // Push to server immediately
+  const serverUrl = getServerUrl();
+  if(serverUrl){
+    fetch(serverUrl + '/analyses', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        id: a.id,
+        name: a.name,
+        syncEnabled: a.syncEnabled,
+        minScore: a.minScore || 7,
+        ntfyChannel: a.ntfyChannel || '',
+        searchUrls: a.searchUrls || [],
+      }),
+    }).then(resp => {
+      if(resp.ok){
+        if(enabled){
+          if(!a.searchUrls?.length){
+            showToast('⚠ Configuração incompleta', 'Sync activado mas sem URLs — preenche os campos abaixo e guarda', 'warn');
+          } else if(!a.ntfyChannel){
+            showToast('⚠ Sem canal ntfy', 'Sync activado mas sem canal — não vais receber notificações', 'warn');
+          } else {
+            showToast('✓ Sync activado', a.name + ' — a enviar notificação de confirmação...', 'success');
+            // Send confirmation notification to verify ntfy channel works
+            sendSyncConfirmationNotification(a.ntfyChannel, a.name).then(ok => {
+              if(ok){
+                showToast('📱 Notificação enviada', 'Verifica o telemóvel — deve chegar em 1-2 segundos', 'success');
+              } else {
+                showToast('⚠ ntfy falhou', 'Sync activo, mas não consegui testar o canal — verifica se está bem escrito', 'warn');
+              }
+            });
+          }
+        } else {
+          showToast('Sync desactivado', a.name, 'info');
+        }
+      } else {
+        showToast('Atenção', 'Erro a guardar no servidor (' + resp.status + ')', 'warn');
+      }
+    }).catch(err => {
+      showToast('Servidor offline', 'Alteração guardada localmente mas não sincronizada', 'warn');
+    });
+  } else {
+    showToast('⚠ Servidor em falta', 'Configura URL do servidor nas Configurações para activar sync', 'warn');
+    // Revert checkbox since no server means no sync
+    a.syncEnabled = false;
+    localStorage.setItem('ai_analyses', JSON.stringify(analyses));
+    const cb = document.getElementById('sync-check-' + i);
+    if(cb) cb.checked = false;
+    if(fields) fields.style.display = 'none';
+  }
 }
 
 async function saveSyncConfig(e, i){
@@ -4543,6 +4967,7 @@ function saveCarNotes(textarea){
   const car = overlay?._car;
   if(!car) return;
   car.userNotes = textarea.value.trim();
+  saveCurrentSession();
 
   // Update in calcRows
   const idx = calcRows.findIndex(c => c.url === car.url);
@@ -5181,6 +5606,9 @@ const BETA_BANNER_VERSION = '0.1.5';
     banner.classList.remove('hidden');
   }
 })();
+
+// Check for newer backup on server
+setTimeout(() => { if(typeof checkBackupOnLoad === 'function') checkBackupOnLoad(); }, 2500);
 
 function dismissBetaBanner(){
   const banner = document.getElementById('beta-banner');
