@@ -261,6 +261,8 @@ td.editing input{width:100%;background:#fff;border:2px solid var(--accent);color
 
 /* ── RESPONSIVE ── */
 @media(max-width:768px){
+  .back-txt{display:none;}
+  #back-btn{padding:6px 10px;min-width:36px;justify-content:center;}
   .sidebar{transform:translateX(-220px);}
   .sidebar.open{transform:translateX(0);}
   .main{margin-left:0;}
@@ -438,7 +440,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
   <div class="topbar">
     <div style="display:flex;align-items:center;gap:12px;">
       <button class="hamburger" id="hamburger" onclick="openSidebar()">☰</button>
-      <button id="back-btn" onclick="goBack()" class="hidden" style="border:1px solid var(--border);background:transparent;color:var(--ink2);padding:6px 10px;border-radius:var(--r);cursor:pointer;font-size:14px;display:flex;align-items:center;gap:5px;font-family:var(--mono);">← Voltar</button>
+      <button id="back-btn" onclick="goBack()" class="hidden" style="border:1px solid var(--border);background:transparent;color:var(--ink2);padding:6px 10px;border-radius:var(--r);cursor:pointer;font-size:14px;display:flex;align-items:center;gap:5px;font-family:var(--mono);"><span>←</span><span class="back-txt">Voltar</span></button>
       <div>
         <div class="page-title" id="pg-title">Dashboard</div>
         <div class="page-sub" id="pg-sub">Resumo e favoritos</div>
