@@ -1339,17 +1339,21 @@ async function validateApiKey(provider){
   }
   else if(provider === 'brave'){
     const key = getBraveKey();
-    if(!key){ showToast('Key em falta','Insere a API key Brave primeiro','warn'); return; }
+    const serverUrl = getServerUrl();
     const statusEl = document.getElementById('brave-key-status');
-    if(statusEl) statusEl.innerHTML = '⏳ A testar...';
+    if(!key){ showToast('Key em falta','Insere a API key Brave primeiro','warn'); return; }
+    if(!serverUrl){
+      showToast('Servidor em falta','Configura primeiro o URL do servidor Railway','warn');
+      if(statusEl) statusEl.innerHTML = '<span style="color:var(--amber);">⚠ Brave precisa do servidor (proxy CORS)</span>';
+      return;
+    }
+    if(statusEl) statusEl.innerHTML = '⏳ A testar via servidor...';
     try{
-      // Test with a real query
       const testQuery = 'BMW M3 2024 CO2 emissions';
-      const resp = await fetch('https://api.search.brave.com/res/v1/web/search?q=' + encodeURIComponent(testQuery) + '&count=3', {
-        headers: {
-          'Accept': 'application/json',
-          'X-Subscription-Token': key
-        }
+      const resp = await fetch(serverUrl + '/brave-search', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({query: testQuery, key: key, count: 3})
       });
       if(resp.ok){
         const data = await resp.json();
@@ -1357,7 +1361,7 @@ async function validateApiKey(provider){
         const firstTitle = data.web?.results?.[0]?.title || '';
         showToast('✓ Brave OK', `${count} resultados devolvidos`, 'success');
         if(statusEl){
-          statusEl.innerHTML = `<span style="color:var(--green);">✓ Brave Search a funcionar</span><br><span style="font-size:10px;color:var(--ink3);">Teste: "${testQuery}" → ${count} resultados</span><br><span style="font-size:10px;color:var(--ink3);">Primeiro: ${firstTitle.substring(0,80)}${firstTitle.length>80?'...':''}</span>`;
+          statusEl.innerHTML = `<span style="color:var(--green);">✓ Brave Search a funcionar (via servidor)</span><br><span style="font-size:10px;color:var(--ink3);">Teste: "${testQuery}" → ${count} resultados</span><br><span style="font-size:10px;color:var(--ink3);">Primeiro: ${firstTitle.substring(0,80)}${firstTitle.length>80?'...':''}</span>`;
         }
       } else if(resp.status === 401 || resp.status === 403){
         showToast('Key inválida','A API key Brave não foi aceite','error');
@@ -1365,13 +1369,17 @@ async function validateApiKey(provider){
       } else if(resp.status === 429){
         showToast('Limite excedido','Brave: quota mensal atingida ou rate limit','warn');
         if(statusEl) statusEl.innerHTML = '<span style="color:var(--amber);">⚠ Quota atingida (429) — espera ou upgrade plano</span>';
+      } else if(resp.status === 404){
+        showToast('Servidor desactualizado','Endpoint /brave-search em falta. Faz redeploy do servidor.','error');
+        if(statusEl) statusEl.innerHTML = '<span style="color:var(--red);">✗ Servidor sem endpoint Brave (redeploy)</span>';
       } else {
-        showToast('Atenção','Brave respondeu ' + resp.status,'warn');
-        if(statusEl) statusEl.innerHTML = '<span style="color:var(--amber);">⚠ Status ' + resp.status + '</span>';
+        const text = await resp.text().catch(()=>'');
+        showToast('Atenção','Servidor respondeu ' + resp.status,'warn');
+        if(statusEl) statusEl.innerHTML = '<span style="color:var(--amber);">⚠ Status ' + resp.status + ' · ' + text.substring(0,100) + '</span>';
       }
     } catch(e){
-      showToast('Erro de rede','Não foi possível testar Brave: ' + e.message, 'error');
-      if(statusEl) statusEl.innerHTML = '<span style="color:var(--red);">✗ Erro de rede</span>';
+      showToast('Erro de rede','Não foi possível contactar o servidor: ' + e.message, 'error');
+      if(statusEl) statusEl.innerHTML = '<span style="color:var(--red);">✗ Servidor offline ou URL errado</span>';
     }
   }
 }
@@ -2133,8 +2141,14 @@ function normStr(s){ return (s||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'
 
 async function braveSearch(query){
   try{
-    const url = 'https://api.search.brave.com/res/v1/web/search?q=' + encodeURIComponent(query) + '&count=3';
-    const resp = await fetch(url,{headers:{'Accept':'application/json','X-Subscription-Token':BRAVE_API_KEY}});
+    const serverUrl = getServerUrl();
+    const braveKey = getBraveKey();
+    if(!serverUrl || !braveKey) return '';
+    const resp = await fetch(serverUrl + '/brave-search', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({query, key: braveKey, count: 3})
+    });
     if(!resp.ok) return '';
     const data = await resp.json();
     return (data.web?.results||[]).slice(0,3).map(r=>(r.title||'')+': '+(r.description||'')).join(' | ');
@@ -2143,8 +2157,14 @@ async function braveSearch(query){
 
 async function braveSearchWithSource(query){
   try{
-    const url = 'https://api.search.brave.com/res/v1/web/search?q=' + encodeURIComponent(query) + '&count=5';
-    const resp = await fetch(url,{headers:{'Accept':'application/json','X-Subscription-Token':BRAVE_API_KEY}});
+    const serverUrl = getServerUrl();
+    const braveKey = getBraveKey();
+    if(!serverUrl || !braveKey) return '';
+    const resp = await fetch(serverUrl + '/brave-search', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({query, key: braveKey, count: 5})
+    });
     if(!resp.ok) return '';
     const data = await resp.json();
     return (data.web?.results||[]).slice(0,5).map(r=>{
