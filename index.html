@@ -2216,17 +2216,27 @@ function renderHistorico(){
   analyses.forEach((a,i)=>{
     const div=document.createElement('div');
     div.className='analysis-card';
+    const carCount = a.cars?.length ?? a.carCount ?? a.count ?? 0;
+    const avgScore = a.avgScore != null ? a.avgScore : '—';
     div.innerHTML=`
       <button class="ac-del" onclick="deleteAnalysis(event,${i})" title="Apagar análise">✕</button>
-      <div class="ac-title" contenteditable="true" onblur="renameAnalysis(this,${i})" style="outline:none;border-bottom:1px dashed transparent;padding-right:24px;" onfocus="this.style.borderBottomColor='var(--accent)'" onblur="this.style.borderBottomColor='transparent'">${a.name}</div>
-      <div class="ac-sub">${a.date} · ${a.cars?.length ?? a.carCount ?? a.count ?? 0} carros · clica para abrir</div>
-      <div class="ac-stats">
-        <div class="ac-stat"><div class="ac-stat-val">${a.count}</div><div class="ac-stat-label">Carros</div></div>
-        <div class="ac-stat"><div class="ac-stat-val">${a.avgScore!=null?a.avgScore:'—'}</div><div class="ac-stat-label">Score Médio</div></div>
-      </div>
-      <div style="margin-top:12px;">
-        <button class="btn btn-primary btn-sm" onclick="loadAnalysis(event,${i})">→ Abrir análise</button>
+      <div class="ac-title" contenteditable="true"
+        onclick="event.stopPropagation()"
+        onblur="renameAnalysis(this,${i});this.style.borderBottomColor='transparent'"
+        onfocus="this.style.borderBottomColor='var(--accent)'"
+        style="outline:none;border-bottom:1px dashed transparent;padding-right:24px;cursor:text;"
+      >${a.name}</div>
+      <div class="ac-sub">${a.date} · ${carCount} carros</div>
+      <div class="ac-stats" style="margin-top:var(--sp3);">
+        <div class="ac-stat"><div class="ac-stat-val">${carCount}</div><div class="ac-stat-label">Carros</div></div>
+        <div class="ac-stat"><div class="ac-stat-val">${avgScore}</div><div class="ac-stat-label">Score Médio</div></div>
       </div>`;
+    div.dataset.idx = i;
+    div.addEventListener('click', function(e) {
+      if(e.target.closest('[contenteditable]') || e.target.closest('.ac-del')) return;
+      loadAnalysis(e, parseInt(this.dataset.idx));
+    });
+    div.style.cursor = 'pointer';
     grid.appendChild(div);
   });
 }
