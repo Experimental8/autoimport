@@ -3535,7 +3535,7 @@ function renderHistorico(){
         <div id="sync-fields-${i}" style="display:${syncOn?'':'none'};">
           <div style="display:grid;grid-template-columns:1fr 60px;gap:var(--sp2);margin-bottom:var(--sp2);">
             <div>
-              <div style="font-size:10px;color:var(--ink3);margin-bottom:3px;">URLs (AS24 / MDE) — um por linha</div>
+              <div style="font-size:10px;color:var(--ink3);margin-bottom:3px;">URLs de pesquisa — um por linha (basta 1, podes ter ambos AS24+MDE)</div>
               <textarea id="sync-urls-${i}" rows="2" onclick="event.stopPropagation()"
                 style="width:100%;font-family:var(--mono);font-size:10px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r);resize:vertical;color:var(--ink);background:var(--surface);"
                 placeholder="https://www.autoscout24.com/lst/...&#10;https://suchen.mobile.de/..."
@@ -4872,6 +4872,23 @@ async function saveSyncConfig(e, i){
       source: url.includes('autoscout24') ? 'as24' : url.includes('mobile.de') ? 'mde' : 'sv'
     }));
 
+  // Detect what changed
+  const urlsChanged = JSON.stringify(a.searchUrls||[]) !== JSON.stringify(searchUrls);
+  const scoreChanged = (a.minScore||7) !== minScore;
+  const channelChanged = (a.ntfyChannel||'') !== ntfyChannel;
+  const anyChange = urlsChanged || scoreChanged || channelChanged;
+
+  // Validate
+  if(syncEnabled){
+    if(searchUrls.length === 0){
+      showToast('⚠ URLs em falta', 'Adiciona pelo menos um URL de pesquisa para activar sync', 'warn');
+      return;
+    }
+    if(!ntfyChannel){
+      if(!confirm('Sem canal ntfy não vais receber notificações no telemóvel. Guardar na mesma?')) return;
+    }
+  }
+
   a.syncEnabled = syncEnabled;
   a.minScore = minScore;
   a.ntfyChannel = ntfyChannel;
@@ -4881,9 +4898,10 @@ async function saveSyncConfig(e, i){
 
   // Push to server
   const serverUrl = getServerUrl();
-  if(serverUrl && syncEnabled){
+  let serverOk = false;
+  if(serverUrl){
     try{
-      await fetch(serverUrl + '/analyses', {
+      const resp = await fetch(serverUrl + '/analyses', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({
@@ -4891,10 +4909,61 @@ async function saveSyncConfig(e, i){
           syncEnabled, minScore, ntfyChannel, searchUrls,
         }),
       });
+      serverOk = resp.ok;
     } catch(err){ console.warn('Server push failed:', err.message); }
   }
 
+  // Feedback
+  if(syncEnabled && serverOk){
+    const parts = [];
+    if(urlsChanged) parts.push(`${searchUrls.length} URLs`);
+    if(scoreChanged) parts.push(`score ${minScore}`);
+    if(channelChanged) parts.push('canal ntfy');
+    const summary = parts.length ? 'Actualizado: ' + parts.join(', ') : 'Configuração confirmada';
+    showToast('✓ Guardado no servidor', summary, 'success');
+
+    // Send ntfy confirmation on every save (user wants this)
+    if(ntfyChannel){
+      sendSyncConfigNotification(ntfyChannel, a.name, {
+        urls: searchUrls.length,
+        score: minScore,
+        changes: anyChange
+      }).then(ok => {
+        if(ok){
+          showToast('📱 Notificação enviada', 'Verifica o telemóvel', 'success');
+        }
+      });
+    }
+  } else if(!syncEnabled){
+    showToast('Sync desactivado', a.name, 'info');
+  } else if(!serverOk){
+    showToast('⚠ Servidor offline', 'Guardado localmente mas não sincronizado', 'warn');
+  }
+
   renderHistorico();
+}
+
+// Send notification on config save — shows what changed
+async function sendSyncConfigNotification(channel, analysisName, info){
+  if(!channel) return false;
+  try{
+    const body = info.changes
+      ? `Configuração actualizada: ${info.urls} URL${info.urls!==1?'s':''}, score mín ${info.score}. Sync 4x/dia (08h, 12h, 14h30, 17h30).`
+      : `Sync confirmada. ${info.urls} URL${info.urls!==1?'s':''}, score mín ${info.score}. Sync 4x/dia (08h, 12h, 14h30, 17h30).`;
+    const resp = await fetch('https://ntfy.sh/' + encodeURIComponent(channel), {
+      method: 'POST',
+      headers: {
+        'Title': '🔔 ' + analysisName,
+        'Priority': 'low',
+        'Tags': 'gear,bell'
+      },
+      body: body
+    });
+    return resp.ok;
+  } catch(e){
+    console.warn('ntfy save notification failed:', e.message);
+    return false;
+  }
 }
 
 // ══════════════════════════════════════════════
