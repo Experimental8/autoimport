@@ -434,6 +434,13 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
   .beta-banner-short{display:inline;}
   .beta-banner-close{width:28px;height:28px;min-width:28px;min-height:28px;font-size:12px;}
 }
+
+/* ── SOBRE PAGE GRID ─────────────────────── */
+.sobre-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp3);margin-bottom:var(--sp3);}
+.sobre-grid-2 > .card{margin-bottom:0;}
+@media (max-width:900px){
+  .sobre-grid-2{grid-template-columns:1fr;}
+}
 </style>
 </head>
 <body>
@@ -993,7 +1000,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
     </div>
 
     <div class="view" id="view-sobre">
-      <div class="content" style="max-width:900px;">
+      <div class="content" style="max-width:1200px;">
 
         <!-- Header banner -->
         <div style="background:linear-gradient(135deg, var(--accent) 0%, #0F2340 100%);color:#fff;border-radius:var(--r-lg);padding:var(--sp5);margin-bottom:var(--sp4);">
@@ -1098,7 +1105,8 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
           </div>
         </div>
 
-        <!-- Como funciona -->
+        <!-- Como funciona + Cálculo ISV -->
+        <div class="sobre-grid-2">
         <div class="card">
           <div class="card-hdr"><div class="card-title">⚙ Como funciona</div></div>
           <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
@@ -1140,8 +1148,10 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
             </p>
           </div>
         </div>
+        </div>
 
-        <!-- Sistema de notificações -->
+        <!-- Sistema de notificações + Custos -->
+        <div class="sobre-grid-2">
         <div class="card">
           <div class="card-hdr"><div class="card-title">🔔 Sistema de notificações</div></div>
           <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
@@ -1209,8 +1219,10 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
             <p style="font-size:11px;color:var(--ink3);">A plataforma apresenta sempre a estimativa de custo antes de iniciar o processamento.</p>
           </div>
         </div>
+        </div>
 
-        <!-- Changelog -->
+        <!-- Changelog + Info técnica -->
+        <div class="sobre-grid-2">
         <div class="card">
           <div class="card-hdr"><div class="card-title">📋 Changelog</div></div>
           <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
@@ -1252,6 +1264,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
               <strong>Cron sync:</strong><span>Todos os dias · 9h às 19h</span>
             </div>
           </div>
+        </div>
         </div>
 
         <div style="text-align:center;font-size:10px;color:var(--ink3);margin-top:var(--sp5);padding-top:var(--sp4);border-top:0.5px solid var(--border);">
@@ -4803,11 +4816,16 @@ function saveOfficialISV(){
 }
 
 // ── BETA BANNER ──────────────────────────────
+const BETA_BANNER_VERSION = '0.1.5';
 (function initBetaBanner(){
   const dismissed = localStorage.getItem('ai_beta_dismissed');
+  const dismissedVersion = localStorage.getItem('ai_beta_dismissed_version');
   const dismissedAt = dismissed ? parseInt(dismissed) : 0;
   const sevenDays = 7 * 24 * 60 * 60 * 1000;
-  const shouldShow = !dismissed || (Date.now() - dismissedAt > sevenDays);
+  // Reappears if: never dismissed, version changed, OR >7 days since dismissal
+  const shouldShow = !dismissed
+    || dismissedVersion !== BETA_BANNER_VERSION
+    || (Date.now() - dismissedAt > sevenDays);
   const banner = document.getElementById('beta-banner');
   if(banner && shouldShow){
     banner.classList.remove('hidden');
@@ -4818,6 +4836,7 @@ function dismissBetaBanner(){
   const banner = document.getElementById('beta-banner');
   if(banner) banner.classList.add('hidden');
   localStorage.setItem('ai_beta_dismissed', Date.now().toString());
+  localStorage.setItem('ai_beta_dismissed_version', BETA_BANNER_VERSION);
 }
 
 </script>
