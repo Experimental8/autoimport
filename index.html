@@ -49,7 +49,6 @@ body{background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:13p
 .nav-item.active{background:rgba(255,255,255,.15);color:#fff;border-left:3px solid #D4A017;padding-left:calc(var(--sp3) - 3px);}
 .nav-icon{font-size:14px;flex-shrink:0;width:18px;text-align:center;}
 .nav-badge{margin-left:auto;color:#fff;font-size:9px;padding:2px 6px;border-radius:var(--r-pill);min-width:18px;text-align:center;background:rgba(255,255,255,.2);}
-.sidebar-footer{padding:var(--sp3) var(--sp4);border-top:1px solid rgba(255,255,255,.08);font-size:10px;color:rgba(255,255,255,.2);}
 .main{margin-left:220px;flex:1;min-width:0;}
 .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:var(--sp4) var(--sp5);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
 .page-title{font-family:var(--syne);font-size:18px;font-weight:700;letter-spacing:-.3px;color:var(--accent);}
@@ -346,12 +345,13 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
 /* Theme toggle button */
 .theme-toggle{
   display:flex;align-items:center;justify-content:center;
-  width:36px;height:36px;margin:0 var(--sp4) var(--sp3);
+  width:36px;height:36px;
   background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.12);cursor:pointer;
   font-size:16px;padding:0;border-radius:var(--r);
-  transition:all .15s;line-height:1;
+  transition:all .15s;line-height:1;flex-shrink:0;
 }
 .theme-toggle:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);}
+.sidebar-footer{padding:var(--sp3) var(--sp4);border-top:1px solid rgba(255,255,255,.08);font-size:10px;color:rgba(255,255,255,.2);display:flex;align-items:center;gap:var(--sp3);}
 
 /* ── LOADING SKELETONS ─────────────────── */
 .skel{
@@ -426,8 +426,10 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
     <button class="nav-item" onclick="goView('config')"><span class="nav-icon">⚙</span>Configurações</button>
     <button class="nav-item" onclick="goView('sobre')"><span class="nav-icon">ⓘ</span>Sobre</button>
   </nav>
-  <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema claro/escuro">🌓</button>
-  <div class="sidebar-footer">v0.1.5 · ISV AT 2026 · 3 Fontes</div>
+  <div class="sidebar-footer">
+    <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema claro/escuro">🌓</button>
+    <span>v0.1.5 · ISV AT 2026 · 3 Fontes</span>
+  </div>
 </aside>
 
 <div class="main">
