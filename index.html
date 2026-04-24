@@ -109,6 +109,11 @@ td.editing input{width:100%;background:#fff;border:2px solid var(--accent);color
 .btn{display:inline-flex;align-items:center;gap:var(--sp2);padding:9px var(--sp4);font-family:var(--mono);font-size:12px;cursor:pointer;border:none;border-radius:var(--r);transition:all .15s;white-space:nowrap;font-weight:500;}
 .btn-primary{background:var(--accent);color:#fff;}
 .btn-primary:hover{background:#152d52;}
+.btn-primary:active{transform:scale(.97);background:#0F2340;}
+.btn-ghost:active{transform:scale(.97);background:var(--border2);}
+.btn:active{transition:all .05s;}
+.nav-item:active{background:rgba(255,255,255,.15);}
+.fav-btn:active{transform:scale(.92);}
 .btn-primary:disabled{opacity:.4;cursor:not-allowed;}
 .btn-ghost{background:transparent;color:var(--ink2);border:1px solid var(--border);}
 .btn-ghost:hover{border-color:var(--ink3);background:var(--surface2);}
@@ -119,7 +124,7 @@ td.editing input{width:100%;background:#fff;border:2px solid var(--accent);color
 .form-row{display:flex;align-items:center;justify-content:space-between;padding:var(--sp2) 0;border-bottom:1px solid var(--border2);}
 .form-row:last-child{border-bottom:none;}
 .form-row label{font-size:12px;color:var(--ink);}
-.form-input{background:var(--surface);border:1px solid var(--border);color:var(--ink);padding:8px var(--sp3);font-family:var(--mono);font-size:12px;border-radius:var(--r);outline:none;transition:border-color .15s;}
+.form-input{background:var(--surface);border:1px solid var(--border);color:var(--ink);padding:var(--sp2) var(--sp3);font-family:var(--mono);font-size:12px;border-radius:var(--r);outline:none;transition:border-color .15s;}
 .form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-l);}
 .form-note{font-size:10px;color:var(--ink3);margin-top:var(--sp1);}
 
@@ -373,10 +378,15 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
 .skel-img{height:160px;margin:-var(--sp4) -var(--sp4) var(--sp3) -var(--sp4);border-radius:var(--r-lg) var(--r-lg) 0 0;}
 .skel-line{height:12px;margin-bottom:6px;}
 .skel-line-sm{height:9px;width:60%;}
+
+/* Feedback táctil em mobile */
+.btn:active{transform:scale(0.97);transition:transform .08s;}
+.nav-item:active{background:var(--accent-l);}
+.car-card:active{transform:scale(0.995);}
 </style>
 </head>
 <body>
-<div id="beta-banner" style="display:none;background:linear-gradient(90deg, #B8860B 0%, #D4A017 100%);color:#fff;padding:8px var(--sp4);font-size:11px;font-family:var(--mono);letter-spacing:.03em;display:flex;align-items:center;justify-content:center;gap:var(--sp3);position:relative;z-index:110;">
+<div id="beta-banner" style="display:none;background:linear-gradient(90deg, #B8860B 0%, #D4A017 100%);color:#fff;padding:var(--sp2) var(--sp4);font-size:11px;font-family:var(--mono);letter-spacing:.03em;display:flex;align-items:center;justify-content:center;gap:var(--sp3);position:relative;z-index:110;">
   <span>⚠ <strong>VERSÃO BETA</strong> · Uso confidencial — toda a informação é coberta por acordo implícito de confidencialidade. <a href="#" onclick="event.preventDefault();goView('sobre');" style="color:#fff;text-decoration:underline;font-weight:600;">Ver detalhes →</a></span>
   <button onclick="dismissBetaBanner()" title="Ocultar" style="background:none;border:1px solid rgba(255,255,255,.4);color:#fff;width:20px;height:20px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;padding:0;line-height:1;">✕</button>
 </div>
@@ -396,14 +406,14 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
         <div class="modal-title">📊 Rever Mercado PT — StandVirtual</div>
         <div style="font-size:11px;color:var(--ink3);margin-top:2px;">Seleciona quais os anúncios que entram na análise de mercado</div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;">
+      <div style="display:flex;gap:var(--sp2);align-items:center;">
         <button class="btn btn-ghost btn-sm" onclick="svSelectAll(true)">✓ Todos</button>
         <button class="btn btn-ghost btn-sm" onclick="svSelectAll(false)">✗ Nenhum</button>
-        <button onclick="closeSVModal()" style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--ink3);padding:4px;">✕</button>
+        <button onclick="closeSVModal()" style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--ink3);padding:var(--sp1);">✕</button>
       </div>
     </div>
     <div class="modal-body">
-      <div id="sv-modal-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;"></div>
+      <div id="sv-modal-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:var(--sp4);"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid var(--border);">
         <div style="font-size:12px;color:var(--ink3);" id="sv-modal-count"></div>
         <button class="btn btn-primary" onclick="confirmarReverMercado()">Confirmar e Recalcular →</button>
@@ -425,7 +435,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
     <button class="nav-item" onclick="resetAndNewAnalise()"><span class="nav-icon">⊕</span>Nova Análise</button>
     <button class="nav-item" onclick="goView('favoritos')"><span class="nav-icon">♥</span>Favoritos<span class="nav-badge" id="fav-badge">0</span></button>
     <button class="nav-item" onclick="goView('historico')"><span class="nav-icon">≡</span>Análises Guardadas<span class="nav-badge" id="hist-badge">0</span></button>
-    <div class="nav-label" style="margin-top:8px;">Sistema</div>
+    <div class="nav-label" style="margin-top:var(--sp2);">Sistema</div>
     <button class="nav-item" id="nav-notif" onclick="goView('notificacoes')"><span class="nav-icon">🔔</span>Notificações<span class="nav-badge hidden" id="notif-badge" style="background:#B91C1C;">0</span></button>
     <button class="nav-item" onclick="goView('config')"><span class="nav-icon">⚙</span>Configurações</button>
     <button class="nav-item" onclick="goView('sobre')"><span class="nav-icon">ⓘ</span>Sobre</button>
@@ -438,7 +448,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
 
 <div class="main">
   <div class="topbar">
-    <div style="display:flex;align-items:center;gap:12px;">
+    <div style="display:flex;align-items:center;gap:var(--sp3);">
       <button class="hamburger" id="hamburger" onclick="openSidebar()">☰</button>
       <button id="back-btn" onclick="goBack()" class="hidden" style="border:1px solid var(--border);background:transparent;color:var(--ink2);padding:6px 10px;border-radius:var(--r);cursor:pointer;font-size:14px;display:flex;align-items:center;gap:5px;font-family:var(--mono);"><span>←</span><span class="back-txt">Voltar</span></button>
       <div>
@@ -453,7 +463,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
 
     <!-- ══════════ DASHBOARD ══════════ -->
     <div class="view active" id="view-dashboard">
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:flex-end;gap:var(--sp2);margin-bottom:var(--sp4);">
         <button class="btn btn-ghost btn-sm" onclick="exportarDados()" title="Exporta todas as análises e favoritos para partilhar">↑ Exportar dados</button>
         <button class="btn btn-ghost btn-sm" onclick="document.getElementById('import-input').click()" title="Importa dados partilhados por outro utilizador">↓ Importar dados</button>
         <input type="file" id="import-input" accept=".json" style="display:none;" onchange="importarDados(this)">
@@ -504,19 +514,19 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
 
               <!-- AS24 URL -->
               <div style="margin-bottom:14px;">
-                <div style="font-size:12px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+                <div style="font-size:12px;font-weight:600;margin-bottom:var(--sp2);display:flex;align-items:center;gap:var(--sp2);">
                   <span style="background:#f5f500;color:#1A1714;font-size:10px;font-weight:700;padding:2px 7px;border-radius:2px;">AS24</span>
                   AutoScout24
                 </div>
-                <div style="font-size:11px;color:var(--ink3);margin-bottom:8px;">
+                <div style="font-size:11px;color:var(--ink3);margin-bottom:var(--sp2);">
                   Vai ao <a href="https://www.autoscout24.com" target="_blank" style="color:var(--accent);">AutoScout24</a>, faz a pesquisa com os filtros que queres e copia o URL da página de resultados.
                 </div>
-                <div style="display:flex;gap:8px;">
+                <div style="display:flex;gap:var(--sp2);">
                   <input class="form-input" id="as24-url-input" placeholder="https://www.autoscout24.com/lst/porsche/991?..." style="flex:1;font-size:12px;" oninput="updateAS24UrlStatus()">
                   <button class="btn btn-primary btn-sm" id="btn-as24-url-fetch" onclick="fetchAS24FromUrl()" disabled>Pesquisar</button>
                 </div>
                 <div id="as24-url-status" style="font-size:11px;margin-top:4px;"></div>
-                <div id="pill-as24" class="hidden" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;">
+                <div id="pill-as24" class="hidden" style="margin-top:var(--sp2);display:flex;align-items:center;justify-content:space-between;">
                   <span class="file-pill">✓ <span id="pill-as24-name"></span></span>
                   <button class="btn btn-ghost btn-sm" onclick="clearOriginFile('as24')">✕</button>
                 </div>
@@ -524,19 +534,19 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
 
               <!-- MDE URL manual -->
               <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border2);">
-                <div style="font-size:12px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+                <div style="font-size:12px;font-weight:600;margin-bottom:var(--sp2);display:flex;align-items:center;gap:var(--sp2);">
                   <span style="background:#68298a;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:2px;">MDE</span>
                   Mobile.de
                 </div>
-                <div style="font-size:11px;color:var(--ink3);margin-bottom:8px;">
+                <div style="font-size:11px;color:var(--ink3);margin-bottom:var(--sp2);">
                   Vai ao <a href="https://suchen.mobile.de" target="_blank" style="color:var(--accent);">Mobile.de</a>, faz a pesquisa com os filtros que queres e copia o URL da página de resultados.
                 </div>
-                <div style="display:flex;gap:8px;">
+                <div style="display:flex;gap:var(--sp2);">
                   <input class="form-input" id="mde-url-input" placeholder="https://suchen.mobile.de/fahrzeuge/search.html?..." style="flex:1;font-size:12px;" oninput="updateMDEUrlStatus()">
                   <button class="btn btn-primary btn-sm" id="btn-mde-fetch" onclick="fetchMDEFromUrl()" disabled>Pesquisar</button>
                 </div>
                 <div id="mde-url-status" style="font-size:11px;margin-top:4px;"></div>
-                <div id="pill-mde" class="hidden" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;">
+                <div id="pill-mde" class="hidden" style="margin-top:var(--sp2);display:flex;align-items:center;justify-content:space-between;">
                   <span class="file-pill">✓ <span id="pill-mde-name"></span></span>
                   <button class="btn btn-ghost btn-sm" onclick="clearOriginFile('mde')">✕</button>
                 </div>
@@ -547,27 +557,27 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
             <!-- MODO UPLOAD CSV (mantido como alternativa) -->
             <div id="mode-upload" class="hidden">
               <div class="alert alert-info" style="margin-bottom:14px;">Modo manual — exporta os CSVs do Apify e carrega aqui.</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:var(--sp4);">
                 <div>
-                  <div style="font-family:var(--syne);font-size:13px;font-weight:600;margin-bottom:8px;">AutoScout24</div>
+                  <div style="font-family:var(--syne);font-size:13px;font-weight:600;margin-bottom:var(--sp2);">AutoScout24</div>
                   <div class="drop" id="dz-as24" onclick="document.getElementById('fi-as24').click()">
                     <input type="file" accept=".csv" id="fi-as24" style="display:none" onchange="handleOriginFile('as24',this.files[0])">
                     <div class="drop-icon">📄</div>
                     <div class="drop-text"><strong>Arrasta CSV AS24</strong><br>ou clica para selecionar</div>
                   </div>
-                  <div id="pill-as24" class="hidden" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;">
+                  <div id="pill-as24" class="hidden" style="margin-top:var(--sp2);display:flex;align-items:center;justify-content:space-between;">
                     <span class="file-pill">✓ <span id="pill-as24-name"></span></span>
                     <button class="btn btn-ghost btn-sm" onclick="clearOriginFile('as24')">✕</button>
                   </div>
                 </div>
                 <div>
-                  <div style="font-family:var(--syne);font-size:13px;font-weight:600;margin-bottom:8px;">Mobile.de</div>
+                  <div style="font-family:var(--syne);font-size:13px;font-weight:600;margin-bottom:var(--sp2);">Mobile.de</div>
                   <div class="drop" id="dz-mde" onclick="document.getElementById('fi-mde').click()">
                     <input type="file" accept=".csv" id="fi-mde" style="display:none" onchange="handleOriginFile('mde',this.files[0])">
                     <div class="drop-icon">📄</div>
                     <div class="drop-text"><strong>Arrasta CSV Mobile.de</strong><br>ou clica para selecionar</div>
                   </div>
-                  <div id="pill-mde" class="hidden" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;">
+                  <div id="pill-mde" class="hidden" style="margin-top:var(--sp2);display:flex;align-items:center;justify-content:space-between;">
                     <span class="file-pill">✓ <span id="pill-mde-name"></span></span>
                     <button class="btn btn-ghost btn-sm" onclick="clearOriginFile('mde')">✕</button>
                   </div>
@@ -597,21 +607,21 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
               <!-- URL Input -->
               <div style="margin-bottom:14px;">
                 <div class="form-note" style="margin-bottom:6px;">URL da pesquisa StandVirtual</div>
-                <div style="display:flex;gap:8px;">
+                <div style="display:flex;gap:var(--sp2);">
                   <input class="form-input" id="sv-url-input" placeholder="https://www.standvirtual.com/carros/porsche/991/desde-2015?..." style="flex:1;" oninput="updateSVUrlStatus()">
                   <button class="btn btn-primary btn-sm" id="btn-sv-fetch" onclick="fetchSVFromUrl()" disabled>🔍 Pesquisar</button>
                 </div>
                 <div id="sv-url-status" style="font-size:11px;color:var(--ink3);margin-top:4px;"></div>
               </div>
 
-              <div style="text-align:center;font-size:11px;color:var(--ink3);margin:12px 0;">— ou carrega CSV exportado do Apify —</div>
+              <div style="text-align:center;font-size:11px;color:var(--ink3);margin:var(--sp3) 0;">— ou carrega CSV exportado do Apify —</div>
 
               <div class="drop" id="dz-sv" onclick="document.getElementById('fi-sv').click()">
                 <input type="file" accept=".csv" id="fi-sv" style="display:none" onchange="handleSVFile(this.files[0])">
                 <div class="drop-icon">📊</div>
                 <div class="drop-text"><strong>Arrasta CSV StandVirtual</strong><br>ou clica para selecionar</div>
               </div>
-              <div id="pill-sv" class="hidden" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;">
+              <div id="pill-sv" class="hidden" style="margin-top:var(--sp2);display:flex;align-items:center;justify-content:space-between;">
                 <span class="file-pill">✓ <span id="pill-sv-name"></span></span>
                 <button class="btn btn-ghost btn-sm" onclick="clearSVFile()">✕</button>
               </div>
@@ -621,13 +631,13 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
               <button class="btn btn-primary" id="btn-step2-next" onclick="reviewSV()" disabled>Rever anúncios SV →</button>
             </div>
             <!-- SV Review panel (shown after upload) -->
-            <div id="sv-review-panel" class="hidden" style="margin-top:20px;">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+            <div id="sv-review-panel" class="hidden" style="margin-top:var(--sp5);">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp3);flex-wrap:wrap;gap:10px;">
                 <div>
                   <div style="font-family:var(--syne);font-size:14px;font-weight:700;">Anúncios StandVirtual</div>
                   <div style="font-size:11px;color:var(--ink3);">Seleciona quais entram na análise de mercado. Desmarca versões ou preços que não correspondam ao modelo que estás a importar.</div>
                 </div>
-                <div style="display:flex;gap:8px;">
+                <div style="display:flex;gap:var(--sp2);">
                   <button class="btn btn-ghost btn-sm" onclick="svSelectAll(true)">✓ Todos</button>
                   <button class="btn btn-ghost btn-sm" onclick="svSelectAll(false)">✗ Nenhum</button>
                 </div>
@@ -647,8 +657,8 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
         <div class="card">
           <div class="card-hdr"><div class="card-title">A processar</div></div>
           <div class="card-body" style="text-align:center;padding:40px 20px;">
-            <div id="proc-cars-anim" style="font-size:56px;margin-bottom:20px;display:inline-block;animation:carDrive 1s ease-in-out infinite alternate;">🚗</div>
-            <div style="font-family:var(--syne);font-size:18px;font-weight:700;margin-bottom:8px;" id="proc-phase-title">A preparar...</div>
+            <div id="proc-cars-anim" style="font-size:56px;margin-bottom:var(--sp5);display:inline-block;animation:carDrive 1s ease-in-out infinite alternate;">🚗</div>
+            <div style="font-family:var(--syne);font-size:18px;font-weight:700;margin-bottom:var(--sp2);" id="proc-phase-title">A preparar...</div>
             <div style="font-size:13px;color:var(--ink3);margin-bottom:24px;min-height:20px;" id="proc-label">A iniciar processamento</div>
             <div style="max-width:400px;margin:0 auto 20px;">
               <div class="prog-bar pulse" id="proc-bar" style="height:4px;border-radius:2px;">
@@ -670,13 +680,13 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
         <!-- Config override -->
         <div class="card">
           <div class="card-hdr"><div class="card-title">Ajuste de Custos</div><span style="font-size:11px;color:var(--ink3);">Valores das Configurações — editável por análise</span></div>
-          <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--sp3);">
             <div>
-              <div class="form-note" style="margin-bottom:4px;">Legalização Total (€)</div>
+              <div class="form-note" style="margin-bottom:var(--sp1);">Legalização Total (€)</div>
               <input class="form-input" type="number" id="ov-legal" onchange="recalcResults()" style="width:100%;">
             </div>
             <div>
-              <div class="form-note" style="margin-bottom:4px;">Norma CO2 padrão</div>
+              <div class="form-note" style="margin-bottom:var(--sp1);">Norma CO2 padrão</div>
               <select class="form-input" id="ov-norma" onchange="applyNormaOverride(this.value)" style="width:100%;">
                 <option value="WLTP">WLTP (2020+)</option>
                 <option value="NEDC">NEDC (até 2019)</option>
@@ -691,7 +701,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
         <!-- Car grid -->
         <div class="card-hdr" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r) var(--r) 0 0;margin-bottom:0;">
           <div class="card-title">Resultados — <span id="res-count">0</span> anúncios</div>
-          <div style="display:flex;gap:8px;">
+          <div style="display:flex;gap:var(--sp2);">
             <select class="form-input" id="sort-select" onchange="renderResults()" style="font-size:11px;padding:5px 10px;">
               <option value="score">Ordenar: Score</option>
               <option value="marg_liq">Ordenar: Margem Líq.</option>
@@ -702,7 +712,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
             <button class="btn btn-primary btn-sm" onclick="exportCSV()">↓ CSV</button>
           </div>
         </div>
-        <div id="car-grid-wrap" style="border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r) var(--r);padding:14px;background:var(--surface);margin-bottom:16px;">
+        <div id="car-grid-wrap" style="border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r) var(--r);padding:14px;background:var(--surface);margin-bottom:var(--sp4);">
           <div id="filter-bar" style="background:var(--surface);border:0.5px solid var(--border);border-top:none;padding:var(--sp3) var(--sp4);display:flex;gap:var(--sp3);flex-wrap:wrap;align-items:center;font-size:11px;">
             <span style="color:var(--ink3);font-weight:600;">Filtros:</span>
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
@@ -747,8 +757,8 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
         </div>
 
         <!-- Eliminados -->
-        <div id="eliminated-section" class="hidden" style="margin-bottom:16px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;" onclick="toggleEliminados()">
+        <div id="eliminated-section" class="hidden" style="margin-bottom:var(--sp4);">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--sp3) 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;" onclick="toggleEliminados()">
             <div style="display:flex;align-items:center;gap:10px;">
               <span style="font-family:var(--syne);font-size:13px;font-weight:600;color:var(--ink3);">Anúncios Eliminados</span>
               <span id="elim-count-badge" style="background:var(--accent);color:#fff;font-size:10px;padding:2px 7px;border-radius:var(--r-lg);">0</span>
@@ -836,7 +846,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
           <div style="margin-top:4px;font-size:11px;color:var(--ink3);">URL do servidor Railway para sync automático e notificações.</div>
         </div>
         <div class="card-body" style="padding-top:0;">
-          <div style="margin-top:8px;font-size:11px;color:var(--ink3);line-height:1.6;">
+          <div style="margin-top:var(--sp2);font-size:11px;color:var(--ink3);line-height:1.6;">
             As keys são guardadas apenas no teu browser (localStorage).<br>
             Anthropic: <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent);">console.anthropic.com</a> → API Keys ·
             Apify: <a href="https://console.apify.com/account/integrations" target="_blank" style="color:var(--accent);">console.apify.com</a> → Integrations ·
@@ -858,12 +868,12 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
           <div id="transp-geral-body">
             <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
               <label style="font-size:12px;color:var(--ink2);flex:1;min-width:200px;">Custo de transporte para todos os países da UE</label>
-              <div style="display:flex;align-items:center;gap:8px;">
+              <div style="display:flex;align-items:center;gap:var(--sp2);">
                 <input class="form-input" type="number" id="transp-geral-val" value="750" style="width:110px;" onchange="updateTranspGeral()">
                 <span style="font-size:12px;color:var(--ink3);">€</span>
               </div>
             </div>
-            <div style="margin-top:8px;font-size:11px;color:var(--ink3);">Este valor será aplicado a todos os países automaticamente.</div>
+            <div style="margin-top:var(--sp2);font-size:11px;color:var(--ink3);">Este valor será aplicado a todos os países automaticamente.</div>
           </div>
           <div id="transp-pais-body" class="hidden" id="cfg-transport"></div>
         </div>
@@ -914,12 +924,12 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
               </div>
               <div>
                 <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:10px;">Benefícios Especiais</div>
-                <div style="display:flex;flex-direction:column;gap:8px;font-size:11px;">
-                  <div style="padding:8px 12px;background:var(--blue-l);border-radius:var(--r);">⚡ <strong>Elétrico</strong> → ISV = 0€</div>
-                  <div style="padding:8px 12px;background:var(--green-l);border-radius:var(--r);">🔋 <strong>PHEV</strong> → 25% do ISV total</div>
-                  <div style="padding:8px 12px;background:#F0E8F5;border-radius:var(--r);">⚡ <strong>Híbrido Mild</strong> → 60% do ISV total</div>
-                  <div style="padding:8px 12px;background:var(--amber-l);border-radius:var(--r);">⚠️ <strong>Gasóleo sem DPF/FAP</strong> → +500€</div>
-                  <div style="padding:8px 12px;background:var(--surface2);border-radius:var(--r);">📋 <strong>Norma</strong>: 2020+ = WLTP · 2019- = verificar</div>
+                <div style="display:flex;flex-direction:column;gap:var(--sp2);font-size:11px;">
+                  <div style="padding:var(--sp2) 12px;background:var(--blue-l);border-radius:var(--r);">⚡ <strong>Elétrico</strong> → ISV = 0€</div>
+                  <div style="padding:var(--sp2) 12px;background:var(--green-l);border-radius:var(--r);">🔋 <strong>PHEV</strong> → 25% do ISV total</div>
+                  <div style="padding:var(--sp2) 12px;background:#F0E8F5;border-radius:var(--r);">⚡ <strong>Híbrido Mild</strong> → 60% do ISV total</div>
+                  <div style="padding:var(--sp2) 12px;background:var(--amber-l);border-radius:var(--r);">⚠️ <strong>Gasóleo sem DPF/FAP</strong> → +500€</div>
+                  <div style="padding:var(--sp2) 12px;background:var(--surface2);border-radius:var(--r);">📋 <strong>Norma</strong>: 2020+ = WLTP · 2019- = verificar</div>
                 </div>
               </div>
             </div>
@@ -973,10 +983,10 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
           <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
             <p style="margin-bottom:10px;">Esta plataforma encontra-se em <strong style="color:var(--ink);">fase beta activa de desenvolvimento</strong>. Isto significa que:</p>
             <ul style="margin-left:20px;margin-bottom:10px;">
-              <li style="margin-bottom:4px;">As funcionalidades estão em constante evolução e podem mudar sem aviso</li>
-              <li style="margin-bottom:4px;">Pode conter erros, bugs ou cálculos imprecisos — reporta sempre que detectares</li>
-              <li style="margin-bottom:4px;">Os valores apresentados são <strong>estimativas</strong> e não substituem a consulta oficial aos organismos competentes</li>
-              <li style="margin-bottom:4px;">Backups dos teus dados (API keys, análises) são da tua responsabilidade</li>
+              <li style="margin-bottom:var(--sp1);">As funcionalidades estão em constante evolução e podem mudar sem aviso</li>
+              <li style="margin-bottom:var(--sp1);">Pode conter erros, bugs ou cálculos imprecisos — reporta sempre que detectares</li>
+              <li style="margin-bottom:var(--sp1);">Os valores apresentados são <strong>estimativas</strong> e não substituem a consulta oficial aos organismos competentes</li>
+              <li style="margin-bottom:var(--sp1);">Backups dos teus dados (API keys, análises) são da tua responsabilidade</li>
             </ul>
             <p style="font-size:11px;color:var(--ink3);">Versão actual: <strong style="color:var(--accent);">v0.1.5</strong> · Última actualização: Abril 2026</p>
           </div>
@@ -991,19 +1001,19 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
             <p style="margin-bottom:10px;">Ao utilizar esta plataforma, o utilizador <strong style="color:var(--ink);">compromete-se implicitamente</strong> a manter confidencialidade absoluta sobre:</p>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp3);margin-bottom:var(--sp3);">
               <div style="background:var(--surface2);padding:var(--sp3);border-radius:var(--r);">
-                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:600;">Lógica de negócio</div>
+                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:var(--sp1);font-weight:600;">Lógica de negócio</div>
                 <div style="font-size:11px;">Fórmulas de cálculo, sistema de score, algoritmo de avaliação de margem, tabelas de referência por modelo</div>
               </div>
               <div style="background:var(--surface2);padding:var(--sp3);border-radius:var(--r);">
-                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:600;">Prompts de IA</div>
+                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:var(--sp1);font-weight:600;">Prompts de IA</div>
                 <div style="font-size:11px;">Estruturas de extracção usadas no Claude, regras de inferência, sistema de classificação de confiança</div>
               </div>
               <div style="background:var(--surface2);padding:var(--sp3);border-radius:var(--r);">
-                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:600;">Arquitectura</div>
+                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:var(--sp1);font-weight:600;">Arquitectura</div>
                 <div style="font-size:11px;">Integração de APIs, configuração de actores Apify, infraestrutura de servidor, sistema de sync</div>
               </div>
               <div style="background:var(--surface2);padding:var(--sp3);border-radius:var(--r);">
-                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:600;">Código-fonte</div>
+                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:var(--sp1);font-weight:600;">Código-fonte</div>
                 <div style="font-size:11px;">Não partilhar, copiar, distribuir ou fazer engenharia inversa da plataforma ou de partes dela</div>
               </div>
             </div>
@@ -1052,22 +1062,22 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
         <div class="card">
           <div class="card-hdr"><div class="card-title">🧮 Cálculo do ISV</div></div>
           <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
-            <p style="margin-bottom:12px;">O ISV é calculado segundo a <strong style="color:var(--ink);">Tabela A da AT para 2026</strong> e inclui:</p>
+            <p style="margin-bottom:var(--sp3);">O ISV é calculado segundo a <strong style="color:var(--ink);">Tabela A da AT para 2026</strong> e inclui:</p>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp3);margin-bottom:var(--sp3);">
               <div style="background:var(--surface2);padding:var(--sp3);border-radius:var(--r);">
-                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Componente cilindrada</div>
+                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:var(--sp1);">Componente cilindrada</div>
                 <div style="font-size:11px;">Escalões até 1000cc, 1250cc e &gt;1250cc</div>
               </div>
               <div style="background:var(--surface2);padding:var(--sp3);border-radius:var(--r);">
-                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Componente ambiental</div>
+                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:var(--sp1);">Componente ambiental</div>
                 <div style="font-size:11px;">CO2 por g/km, WLTP ou NEDC, gasolina ou gasóleo</div>
               </div>
               <div style="background:var(--surface2);padding:var(--sp3);border-radius:var(--r);">
-                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Reduções aplicáveis</div>
+                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:var(--sp1);">Reduções aplicáveis</div>
                 <div style="font-size:11px;">PHEV −75%, Híbrido Mild −40%, Eléctrico 0€</div>
               </div>
               <div style="background:var(--surface2);padding:var(--sp3);border-radius:var(--r);">
-                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Desconto por idade</div>
+                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:var(--sp1);">Desconto por idade</div>
                 <div style="font-size:11px;">De 10% (1 ano) até 80% (&gt;10 anos)</div>
               </div>
             </div>
@@ -1083,11 +1093,11 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
           <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
             <p style="margin-bottom:10px;">Activas sync numa análise guardada e recebes <strong>2 tipos de alerta</strong>:</p>
             <div style="margin-bottom:var(--sp3);padding:var(--sp3);background:var(--green-l);border-radius:var(--r);border-left:3px solid var(--green);">
-              <div style="font-weight:600;color:var(--green);margin-bottom:4px;">🚗 Novo anúncio</div>
+              <div style="font-weight:600;color:var(--green);margin-bottom:var(--sp1);">🚗 Novo anúncio</div>
               <div style="font-size:11px;color:var(--ink2);">Carro que não existia antes E tem score igual ou acima do mínimo definido por ti.</div>
             </div>
             <div style="padding:var(--sp3);background:var(--amber-l);border-radius:var(--r);border-left:3px solid var(--amber);">
-              <div style="font-weight:600;color:var(--amber);margin-bottom:4px;">📉 Baixou de preço</div>
+              <div style="font-weight:600;color:var(--amber);margin-bottom:var(--sp1);">📉 Baixou de preço</div>
               <div style="font-size:11px;color:var(--ink2);">Carro conhecido que estava abaixo do score mínimo, o preço desceu, e agora o score passou o mínimo.</div>
             </div>
             <p style="margin-top:var(--sp3);font-size:11px;color:var(--ink3);">
@@ -1102,10 +1112,10 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
           <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
             <p style="margin-bottom:10px;"><strong style="color:var(--ink);">Onde ficam os teus dados:</strong></p>
             <ul style="margin-left:20px;margin-bottom:var(--sp3);">
-              <li style="margin-bottom:4px;"><strong>API Keys</strong> — apenas no localStorage do teu browser.</li>
-              <li style="margin-bottom:4px;"><strong>Análises completas com dados dos carros</strong> — apenas no localStorage do teu browser.</li>
-              <li style="margin-bottom:4px;"><strong>Metadados</strong> (nome, data, URLs de pesquisa, config de sync) — enviados ao servidor Railway quando guardas ou activas sync.</li>
-              <li style="margin-bottom:4px;"><strong>Notificações</strong> — guardadas 7 dias no servidor Railway e partilhadas entre os teus dispositivos.</li>
+              <li style="margin-bottom:var(--sp1);"><strong>API Keys</strong> — apenas no localStorage do teu browser.</li>
+              <li style="margin-bottom:var(--sp1);"><strong>Análises completas com dados dos carros</strong> — apenas no localStorage do teu browser.</li>
+              <li style="margin-bottom:var(--sp1);"><strong>Metadados</strong> (nome, data, URLs de pesquisa, config de sync) — enviados ao servidor Railway quando guardas ou activas sync.</li>
+              <li style="margin-bottom:var(--sp1);"><strong>Notificações</strong> — guardadas 7 dias no servidor Railway e partilhadas entre os teus dispositivos.</li>
             </ul>
             <p style="margin-bottom:10px;"><strong style="color:var(--ink);">Serviços externos:</strong></p>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp2);font-size:11px;">
@@ -1178,7 +1188,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
         <div class="card">
           <div class="card-hdr"><div class="card-title">ⓘ Informação técnica</div></div>
           <div class="card-body" style="font-size:12px;color:var(--ink2);">
-            <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 20px;">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:var(--sp2) 20px;">
               <strong>Versão:</strong><span>v0.1.5</span>
               <strong>Host:</strong><span>GitHub Pages</span>
               <strong>Servidor:</strong><span id="sobre-server-status" style="font-family:var(--mono);">a verificar...</span>
@@ -1210,7 +1220,7 @@ async function validateApiKey(provider){
     const key = getApiKey();
     if(!key) return;
     try{
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      const resp = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1223,7 +1233,7 @@ async function validateApiKey(provider){
           max_tokens: 10,
           messages: [{role:'user',content:'ok'}]
         })
-      });
+      }, 90000);
       if(resp.ok){
         showToast('✓ Anthropic OK','Key válida e a funcionar','success');
       } else if(resp.status === 401){
@@ -1255,6 +1265,24 @@ async function validateApiKey(provider){
   }
 }
 
+
+// ── FETCH WITH TIMEOUT ─────────────────────
+async function fetchWithTimeout(url, options = {}, timeoutMs = 60000){
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try{
+    const resp = await fetch(url, {...options, signal: controller.signal});
+    clearTimeout(timeoutId);
+    return resp;
+  } catch(err){
+    clearTimeout(timeoutId);
+    if(err.name === 'AbortError'){
+      throw new Error(`Pedido expirou após ${Math.round(timeoutMs/1000)}s (${url.substring(0, 50)}...)`);
+    }
+    throw err;
+  }
+}
+
 function showToast(title, msg, type){
   type = type || 'info';
   const container = document.getElementById('toast-container');
@@ -1274,7 +1302,6 @@ function showToast(title, msg, type){
 // ══════════════════════════════════════════════
 // STATE
 // Server URL — update after Railway deploy
-const SERVER_URL = localStorage.getItem('ai_server_url') || '';
 // ══════════════════════════════════════════════
 const DEF_CFG = {
   transport:{
@@ -1292,7 +1319,6 @@ let notificacoes = [];
 let analyses = JSON.parse(localStorage.getItem('ai_analyses') || '[]');
 
 // Current analysis state
-let originRows = []; // AS24 + Mobile.de combined
 let svRows = [];     // StandVirtual
 let processedOrigin = [];
 let svMarket = {};   // computed from SV
@@ -1607,6 +1633,7 @@ async function startProcessing(){
   }
 
   _processingLock = true;
+  try {
   processedOrigin=[];
   showCarSkeleton(Math.min(totalCars, 6));
   const allOrigin=[
@@ -1767,6 +1794,10 @@ async function startProcessing(){
   renderResults();
   // Auto-save if this analysis is already saved
   autoSaveCurrentAnalysis();
+
+  } finally {
+    _processingLock = false;
+  }
 }
 
 function autoSaveCurrentAnalysis(){
@@ -1814,7 +1845,7 @@ ${batchText}
 
 Responde APENAS com o array JSON.`;
 
-  const resp=await fetch('https://api.anthropic.com/v1/messages',{
+  const resp=await fetchWithTimeout('https://api.anthropic.com/v1/messages',{
     method:'POST',
     headers:{
       'Content-Type':'application/json',
@@ -1827,7 +1858,7 @@ Responde APENAS com o array JSON.`;
       max_tokens:600,
       messages:[{role:'user',content:prompt}]
     })
-  });
+  }, 90000);
   if(!resp.ok)throw new Error(`API ${resp.status}`);
   const data=await resp.json();
   const text=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
@@ -1982,11 +2013,11 @@ async function fillMissingData(cars){
     + 'Se sem dados fiáveis usa 0. SEM texto extra. Começa [ termina ].\n\n'
     + context;
 
-  const resp = await fetch('https://api.anthropic.com/v1/messages',{
+  const resp = await fetchWithTimeout('https://api.anthropic.com/v1/messages',{
     method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':getApiKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
     body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:300,messages:[{role:'user',content:prompt}]})
-  });
+  }, 90000);
   if(!resp.ok) throw new Error('API '+resp.status);
   const data = await resp.json();
   const text = data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
@@ -2032,7 +2063,7 @@ function buildSVReviewList(containerId, countId, checkboxPrefix){
     const preco = parseFloat(r.price||r.preco||0);
     const isSelected = svSelectedRows.includes(i);
     const div = document.createElement('div');
-    div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--border2);border-radius:var(--r);background:var(--surface);transition:background .15s;';
+    div.style.cssText = 'display:flex;align-items:center;gap:var(--sp3);padding:10px 14px;border:1px solid var(--border2);border-radius:var(--r);background:var(--surface);transition:background .15s;';
     div.innerHTML = `
       <input type="checkbox" id="${checkboxPrefix}-${i}" ${isSelected?'checked':''} onchange="svToggleModal(${i},this.checked,'${checkboxPrefix}')" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);">
       <label for="${checkboxPrefix}-${i}" style="flex:1;min-width:0;cursor:pointer;">
@@ -2109,6 +2140,8 @@ function closeSVModal(e){
 }
 
 async function confirmarReverMercado(){
+  try{
+
   closeSVModal();
   // Recalculate market with new selection
   const selectedSVRows = svSelectedRows.map(i=>files.sv.rows[i]).filter(Boolean);
@@ -2119,6 +2152,11 @@ async function confirmarReverMercado(){
   eliminatedRows = eliminatedRows.map(r=>({...r, svRef: newSvRef, ...calcMarg({...r, svRef: newSvRef})}));
   renderMarketHeader();
   renderResults();
+
+  } catch(err){
+    console.error("Erro em confirmarReverMercado:", err);
+    showToast("Erro","Falha ao analisar mercado: "+err.message,"error");
+  }
 }
 
 async function analyzeSVMarket(rows){
@@ -2329,7 +2367,7 @@ function renderMarketHeader(){
     <div style="display:flex;align-items:flex-start;padding:0 4px;">
       <button onclick="abrirReverMercado()" style="border:1px solid var(--border);background:var(--surface);color:var(--ink2);padding:7px 12px;border-radius:var(--r);cursor:pointer;font-size:11px;font-family:var(--mono);white-space:nowrap;" onmouseover="this.style.borderColor='var(--ink2)'" onmouseout="this.style.borderColor='var(--border)'">📊 Rever Mercado PT</button>
     </div>
-    <div style="background:var(--surface2);border-radius:var(--r);padding:12px 16px;font-size:11px;max-width:200px;">
+    <div style="background:var(--surface2);border-radius:var(--r);padding:var(--sp3) 16px;font-size:11px;max-width:200px;">
       <div style="font-weight:600;margin-bottom:6px;">Preço de Venda Ref.</div>
       <div>Min: <strong>${fmt(m.preco_min)}€</strong></div>
       <div>Médio: <strong style="color:var(--accent);">${fmt(m.preco_medio)}€</strong></div>
@@ -2413,7 +2451,7 @@ function buildCarCard(r,i){
   div.innerHTML=`
     <button class="fav-btn ${isFav?'active':''}" onclick="toggleFav(event,${i})" title="${isFav?'Remover dos favoritos':'Guardar como favorito'}" style="left:auto;right:8px;">${isFav?'♥':'♡'}</button>
     <button onclick="eliminarCarro(event,${i})" title="Eliminar anúncio" style="position:absolute;top:8px;left:8px;width:28px;height:28px;border-radius:50%;background:rgba(185,28,28,0.85);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;z-index:10;line-height:1;">✕</button>
-    <label onclick="event.stopPropagation()" title="${compareCars.some(c=>c.url===r.url)?'Remover da comparação':'Adicionar à comparação'}" style="position:absolute;top:8px;left:44px;z-index:10;background:${compareCars.some(c=>c.url===r.url)?'var(--accent)':'rgba(255,255,255,.9)'};border:1px solid var(--border);border-radius:var(--r);padding:4px 8px;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:10px;color:${compareCars.some(c=>c.url===r.url)?'#fff':'var(--ink2)'};font-weight:600;">
+    <label onclick="event.stopPropagation()" title="${compareCars.some(c=>c.url===r.url)?'Remover da comparação':'Adicionar à comparação'}" style="position:absolute;top:8px;left:44px;z-index:10;background:${compareCars.some(c=>c.url===r.url)?'var(--accent)':'rgba(255,255,255,.9)'};border:1px solid var(--border);border-radius:var(--r);padding:var(--sp1) 8px;cursor:pointer;display:flex;align-items:center;gap:var(--sp1);font-size:10px;color:${compareCars.some(c=>c.url===r.url)?'#fff':'var(--ink2)'};font-weight:600;">
       <input type="checkbox" ${compareCars.some(c=>c.url===r.url)?'checked':''} onchange="toggleCompare(event,${i})" style="margin:0;accent-color:${compareCars.some(c=>c.url===r.url)?'#fff':'var(--accent)'};" />
       ⇄
     </label>
@@ -2422,7 +2460,7 @@ function buildCarCard(r,i){
     </div>
     <div class="car-card-body">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <div style="display:flex;gap:4px;">${srcBadges}</div>
+        <div style="display:flex;gap:var(--sp1);">${srcBadges}</div>
         ${r.score!=null?`<span style="font-family:var(--syne);font-size:13px;font-weight:800;color:${scColor};">${r.score}</span>`:''}
         ${(()=>{ const conf = getISVConfidence(r); if(conf==='alta' || r.isv_official) return ''; const iconColor = conf==='média'?'var(--amber)':'var(--red)'; const title = conf==='média'?'Confiança média — ISV pode variar':'Confiança baixa — validar dados'; return `<span title="${title}" style="font-size:10px;color:${iconColor};margin-left:4px;cursor:help;">⚠</span>`; })()}
         ${r.isv_official?'<span title="ISV oficial validado" style="font-size:10px;color:var(--green);margin-left:4px;">✓</span>':''}
@@ -2491,17 +2529,17 @@ function openCarModal(r){
         <div class="modal-title">${r.marca} ${r.modelo}</div>
         <div style="font-size:11px;color:var(--ink3);">${r.submodelo||''}</div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;">
+      <div style="display:flex;gap:var(--sp2);align-items:center;">
         ${r.score!=null?`<span class="score" style="background:${scColor};color:#fff;">${r.score}</span>`:''}
         <button onclick="toggleFavModal()" id="modal-fav" style="border:1px solid var(--border);background:${isFav?'var(--accent-l)':'transparent'};color:${isFav?'var(--accent)':'var(--ink3)'};padding:6px 12px;border-radius:var(--r);cursor:pointer;font-size:13px;">${isFav?'♥ Favorito':'♡ Guardar'}</button>
         ${r.url?`<a href="${r.url}" target="_blank" class="btn btn-primary btn-sm">↗ ${r.fonte||'AS24'}</a>`:''}
         ${r.url2?`<a href="${r.url2}" target="_blank" class="btn btn-ghost btn-sm">↗ ${(r.fontes||[])[1]||'MDE'}</a>`:''}
-        <button onclick="closeModal()" style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--ink3);padding:4px;">✕</button>
+        <button onclick="closeModal()" style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--ink3);padding:var(--sp1);">✕</button>
       </div>
     </div>
     <div class="modal-body">
       ${r.foto_url?`<img src="${r.foto_url}" class="modal-img" onerror="this.outerHTML='<div class=modal-img style=font-size:48px>🚗</div>'">`:'<div class="modal-img" style="font-size:48px;">🚗</div>'}
-      <div style="font-size:11px;color:var(--ink3);margin-bottom:12px;">📍 ${r.dealer||'—'} · ${r.pais||'—'} ${r.regiao?'· '+r.regiao:''}</div>
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:var(--sp3);">📍 ${r.dealer||'—'} · ${r.pais||'—'} ${r.regiao?'· '+r.regiao:''}</div>
       <div class="cost-strip">
         <div class="cs-item"><div class="cs-val">${fmt(r.preco||0)}€</div><div class="cs-label">Compra</div></div>
         <div class="cs-item"><div class="cs-val">${fmt(r.transp||0)}€</div><div class="cs-label">Transporte</div></div>
@@ -2509,7 +2547,7 @@ function openCarModal(r){
         <div class="cs-item"><div class="cs-val">${fmt(r.legal||0)}€</div><div class="cs-label">Legalização</div></div>
         <div class="cs-item" style="background:var(--accent-l);"><div class="cs-val" style="color:var(--accent);">${fmt(r.custo||0)}€</div><div class="cs-label">Custo Total PT</div></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;padding:12px;background:${r.ml>=0?'var(--green-l)':'var(--accent-l)'};border-radius:var(--r);">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--sp2);margin-bottom:14px;padding:var(--sp3);background:${r.ml>=0?'var(--green-l)':'var(--accent-l)'};border-radius:var(--r);">
         <div class="cs-item" style="background:transparent;"><div class="cs-val">${r.mb!=null?fmt(r.mb)+'€':'—'}</div><div class="cs-label">Margem Bruta</div></div>
         <div class="cs-item" style="background:transparent;"><div class="cs-val" style="color:var(--amber);">${r.ivaM!=null?fmt(r.ivaM)+'€':'—'}</div><div class="cs-label">IVA Margem (23%)</div></div>
         <div class="cs-item" style="background:transparent;"><div class="cs-val" style="color:${r.ml>=0?'var(--green)':'var(--accent)'};">${r.ml!=null?fmt(r.ml)+'€':'—'}</div><div class="cs-label">Margem Líquida</div></div>
@@ -2541,7 +2579,7 @@ function openCarModal(r){
         <div style="font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:var(--sp2);font-weight:600;">📈 Histórico de preços</div>
         <div id="price-history-content" style="font-size:12px;color:var(--ink2);"></div>
       </div>
-      <div style="font-size:11px;color:var(--ink3);margin-bottom:8px;">✏️ Clica em qualquer campo para editar — o ISV e margens recalculam automaticamente</div>
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:var(--sp2);">✏️ Clica em qualquer campo para editar — o ISV e margens recalculam automaticamente</div>
       <div class="detail-grid" id="modal-detail-grid">
         ${detailField('Ano', 'ano', r.ano||'', false, r)}
         ${detailField('Quilómetros', 'km', r.km||0, false, r, 'km')}
@@ -2561,7 +2599,7 @@ function openCarModal(r){
         ${detailField('Classe Emissões', 'emissoes', r.emissoes||'—', false, r)}
         ${detailField('Filtro DPF/FAP', 'filtro_particulas', r.filtro_particulas||'—', false, r, '', ['Sim','Não','Desconhecido'])}
       </div>
-      ${r.notas?`<div class="alert alert-warn" style="margin-top:8px;">📋 ${r.notas}</div>`:''}
+      ${r.notas?`<div class="alert alert-warn" style="margin-top:var(--sp2);">📋 ${r.notas}</div>`:''}
       <div style="margin-top:var(--sp4);">
         <div style="font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;font-weight:600;">📝 As minhas notas</div>
         <textarea id="car-user-notes"
@@ -2772,7 +2810,7 @@ function buildFavCard(r, i){
       ${r.foto_url?`<img src="${r.foto_url}" onerror="this.parentNode.innerHTML='🚗'" loading="lazy">`:'🚗'}
     </div>
     <div class="car-card-body">
-      <div style="display:flex;gap:4px;margin-bottom:6px;">${srcBadges}</div>
+      <div style="display:flex;gap:var(--sp1);margin-bottom:6px;">${srcBadges}</div>
       <div class="car-card-title">${r.marca} ${r.modelo}</div>
       <div class="car-card-sub">${r.submodelo||''}</div>
       <div class="car-card-meta">
@@ -2826,13 +2864,13 @@ function renderFavPreview(){
         ${r.ml!=null?`<div style="font-size:12px;font-weight:600;color:${r.ml>=0?'var(--green)':'var(--accent)'};">${fmt(r.ml)}€ líq.</div>`:''}
       </div>
       ${r.score!=null?`<div style="font-family:var(--syne);font-size:14px;font-weight:800;color:${scColor};min-width:28px;text-align:center;">${r.score}</div>`:''}
-      <button onclick="removeFavDash(event,${i})" title="Remover favorito" style="border:none;background:none;cursor:pointer;color:var(--accent);font-size:18px;padding:4px 6px;flex-shrink:0;" >♥</button>`;
+      <button onclick="removeFavDash(event,${i})" title="Remover favorito" style="border:none;background:none;cursor:pointer;color:var(--accent);font-size:18px;padding:var(--sp1) 6px;flex-shrink:0;" >♥</button>`;
     const rowBody = row.querySelector('div[style*="flex:1"]'); if(rowBody) rowBody.addEventListener('click',()=>openCarModal(r));
     wrap.appendChild(row);
   });
   if(favs.length>5){
     const more=document.createElement('div');
-    more.style.cssText='text-align:center;padding:8px;font-size:11px;color:var(--ink3);cursor:pointer;';
+    more.style.cssText='text-align:center;padding:var(--sp2);font-size:11px;color:var(--ink3);cursor:pointer;';
     more.textContent=`+ ${favs.length-5} favoritos → ver todos`;
     more.onclick=()=>goView('favoritos');
     wrap.appendChild(more);
@@ -3068,7 +3106,7 @@ function renderTransportPais(){
   pBody.innerHTML = Object.entries(cfg.transport).map(([k,v])=>`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border2);">
       <label style="font-size:12px;color:var(--ink);">${k}</label>
-      <div style="display:flex;align-items:center;gap:8px;">
+      <div style="display:flex;align-items:center;gap:var(--sp2);">
         <input class="form-input" type="number" value="${v}" data-t="${k}" onchange="updateCfg()" style="width:110px;">
         <span style="font-size:11px;color:var(--ink3);width:14px;">€</span>
       </div>
@@ -3087,7 +3125,7 @@ function renderConfig(){
     lRows.innerHTML = Object.entries(cfg.legal).map(([k,v])=>`
       <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border2);">
         <label style="font-size:12px;color:var(--ink);">${k}</label>
-        <div style="display:flex;align-items:center;gap:8px;">
+        <div style="display:flex;align-items:center;gap:var(--sp2);">
           <input class="form-input" type="number" value="${v}" data-l="${k}" onchange="updateCfg()" style="width:110px;">
           <span style="font-size:11px;color:var(--ink3);width:14px;">€</span>
         </div>
@@ -3192,13 +3230,13 @@ function renderDashboard(){
   wrap.style.cssText='padding:14px;display:flex;flex-direction:column;gap:10px;';
   analyses.slice(0,5).forEach((a,i)=>{
     const div=document.createElement('div');
-    div.style.cssText='display:flex;align-items:center;gap:14px;padding:12px 16px;border:1px solid var(--border2);border-radius:var(--r);background:var(--surface);';
+    div.style.cssText='display:flex;align-items:center;gap:14px;padding:var(--sp3) 16px;border:1px solid var(--border2);border-radius:var(--r);background:var(--surface);';
     div.innerHTML=`
       <div style="flex:1;min-width:0;">
         <div style="font-family:var(--syne);font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.name}</div>
         <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${a.date} · ${a.cars?.length ?? a.carCount ?? a.count ?? 0} carros</div>
       </div>
-      <div style="display:flex;gap:16px;flex-shrink:0;">
+      <div style="display:flex;gap:var(--sp4);flex-shrink:0;">
         <div style="text-align:center;">
           <div style="font-family:var(--syne);font-size:15px;font-weight:700;">${a.avgScore||'—'}</div>
           <div style="font-size:9px;color:var(--ink3);text-transform:uppercase;">Score</div>
@@ -3212,7 +3250,7 @@ function renderDashboard(){
   });
   if(analyses.length>5){
     const more=document.createElement('div');
-    more.style.cssText='text-align:center;padding:8px;font-size:11px;color:var(--ink3);cursor:pointer;';
+    more.style.cssText='text-align:center;padding:var(--sp2);font-size:11px;color:var(--ink3);cursor:pointer;';
     more.textContent=`+ ${analyses.length-5} análises → ver todas`;
     more.onclick=()=>goView('historico');
     wrap.appendChild(more);
@@ -3278,9 +3316,6 @@ function updateProcStats(){
   if(logStats.err) parts.push(`<div style="text-align:center;"><div style="font-family:var(--syne);font-size:20px;font-weight:700;color:var(--accent);">${logStats.err}</div><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;">Erros</div></div>`);
   el.innerHTML = parts.join('');
 }
-const phaseEmojis = ['🔍','⚡','🧮','✅'];
-let phaseIdx = 0;
-
 function updProg(done,total,label){
   const pct=Math.round(done/total*100);
   const f=document.getElementById('proc-fill');
@@ -3363,7 +3398,7 @@ function renderEliminados(){
     div.className = 'car-card';
     div.style.cssText = 'opacity:0.65;position:relative;';
     div.innerHTML = `
-      <button onclick="restaurarCarro(event,${i})" title="Restaurar anúncio" style="position:absolute;top:8px;left:8px;z-index:10;background:var(--green);color:#fff;border:none;border-radius:var(--r);padding:4px 10px;font-size:10px;cursor:pointer;font-family:var(--mono);">↩ Restaurar</button>
+      <button onclick="restaurarCarro(event,${i})" title="Restaurar anúncio" style="position:absolute;top:8px;left:8px;z-index:10;background:var(--green);color:#fff;border:none;border-radius:var(--r);padding:var(--sp1) 10px;font-size:10px;cursor:pointer;font-family:var(--mono);">↩ Restaurar</button>
       <div class="car-card-img">
         ${r.foto_url ? `<img src="${r.foto_url}" onerror="this.parentNode.innerHTML='🚗'" loading="lazy">` : '🚗'}
       </div>
@@ -3549,9 +3584,6 @@ const CAR_DATA = {
   'Volvo':{ models:['C30','C40','C70','S40','S60','S80','S90','V40','V60','V70','V90','XC40','XC60','XC70','XC90'],
     variants:{'XC60':['B4','B5','B6','T8 Recharge','Polestar','R-Design','Inscription'],'XC90':['B5','B6','T8 Recharge','R-Design','Inscription','Excellence'],'S60':['B4','B5','T8 Recharge','Polestar Engineered','R-Design'],'V90':['B4','B5','Cross Country','B6 Cross Country']} },
 };
-
-const ALL_MARCAS = Object.keys(CAR_DATA).sort();
-
 function getModelsForMarca(marca){
   const key = Object.keys(CAR_DATA).find(k=>k.toLowerCase()===marca.toLowerCase());
   return key ? CAR_DATA[key].models || [] : [];
@@ -3660,12 +3692,19 @@ function setInputMode(mode){
 }
 
 async function runApifyActor(actorId, input, maxItems){
+  try{
+
   const apiKey=getApifyKey();
   if(!apiKey) throw new Error('API key do Apify não configurada');
   const runUrl='https://api.apify.com/v2/acts/'+encodeURIComponent(actorId)+'/run-sync-get-dataset-items?token='+apiKey+'&maxItems='+maxItems+'&format=json';
   const resp=await fetch(runUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)});
   if(!resp.ok){ const err=await resp.json().catch(()=>({})); throw new Error('Apify erro '+resp.status+': '+(err.error?.message||'Unknown')); }
   return await resp.json();
+
+  } catch(err){
+    if(err.name === "AbortError") throw new Error("Apify pedido expirou");
+    throw err;
+  }
 }
 
 function updateAS24UrlStatus(){
@@ -3910,14 +3949,14 @@ function renderNotificacoes(){
       return `<div onclick="openNotification(${n.id})" style="cursor:pointer;padding:var(--sp3) var(--sp4);border:0.5px solid var(--border);border-radius:var(--r-lg);margin-bottom:var(--sp2);${bgNew}${isNew}transition:all .15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='${n.read ? 'var(--border)' : '#B91C1C'}'">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--sp3);">
           <div style="flex:1;">
-            <div style="font-family:var(--syne);font-size:13px;font-weight:600;color:var(--accent);margin-bottom:4px;">${n.title}</div>
+            <div style="font-family:var(--syne);font-size:13px;font-weight:600;color:var(--accent);margin-bottom:var(--sp1);">${n.title}</div>
             <div style="font-size:11px;color:var(--ink2);line-height:1.5;white-space:pre-line;">${n.message}</div>
             ${analysisName ? `<div style="margin-top:6px;font-size:10px;color:var(--ink3);">→ ${analysisName}</div>` : ''}
           </div>
           <div style="text-align:right;flex-shrink:0;">
             <div style="font-size:10px;color:var(--ink3);">${dateStr}</div>
             <div style="font-size:10px;color:var(--ink3);">${timeStr}</div>
-            ${!n.read ? '<div style="width:8px;height:8px;border-radius:50%;background:#B91C1C;margin:4px 0 0 auto;"></div>' : ''}
+            ${!n.read ? '<div style="width:8px;height:8px;border-radius:50%;background:#B91C1C;margin:var(--sp1) 0 0 auto;"></div>' : ''}
           </div>
         </div>
       </div>`;
@@ -4216,7 +4255,7 @@ function openCompareModal(){
         <div class="modal-title">Comparação — ${cols} carros</div>
         <div style="font-size:11px;color:var(--ink3);">Lado a lado</div>
       </div>
-      <button onclick="closeModal()" style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--ink3);padding:4px;">✕</button>
+      <button onclick="closeModal()" style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--ink3);padding:var(--sp1);">✕</button>
     </div>
     <div class="modal-body" style="overflow-x:auto;">${table}</div>
   `;
