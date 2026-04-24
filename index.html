@@ -4108,8 +4108,20 @@ function updateAS24UrlStatus(){
 
 async function fetchAS24FromUrl(){
   const input = document.getElementById('as24-url-input');
-  const url = (input?.value||'').trim();
+  let url = (input?.value||'').trim();
   if(!url || !url.includes('autoscout24.com')) return;
+
+  // Clean common URL issues
+  url = url.replace(/^https?:\/\/m\./, 'https://www.');  // mobile → www
+  if(!url.startsWith('http')) url = 'https://' + url;
+
+  // Ensure it's a search URL (has /lst/ or query params)
+  if(!url.includes('/lst/') && !url.includes('?')){
+    const status = document.getElementById('as24-url-status');
+    if(status){ status.textContent='⚠️ URL parece ser de página inicial. Cola o URL depois de aplicar filtros de pesquisa.'; status.style.color='var(--accent)'; }
+    return;
+  }
+  console.log('[AS24 fetch]', url);
   if(!getApifyKey()){ showToast('Apify em falta','Configura a key do Apify nas Configurações','warn'); goView('config'); return; }
   const btn = document.getElementById('btn-as24-url-fetch');
   const status = document.getElementById('as24-url-status');
@@ -4143,8 +4155,20 @@ function updateMDEUrlStatus(){
 
 async function fetchMDEFromUrl(){
   const input = document.getElementById('mde-url-input');
-  const url = (input?.value||'').trim();
+  let url = (input?.value||'').trim();
   if(!url || !url.includes('mobile.de')) return;
+
+  // Clean common URL issues
+  url = url.replace(/^https?:\/\/m\./, 'https://suchen.');  // mobile → suchen
+  if(!url.startsWith('http')) url = 'https://' + url;
+
+  // MDE search URLs should be on suchen.mobile.de
+  if(!url.includes('suchen.mobile.de') && !url.includes('fahrzeuge/search')){
+    const status = document.getElementById('mde-url-status');
+    if(status){ status.textContent='⚠️ URL inválido. Deve ser de uma pesquisa em suchen.mobile.de/fahrzeuge/search.html'; status.style.color='var(--accent)'; }
+    return;
+  }
+  console.log('[MDE fetch]', url);
   if(!getApifyKey()){ showToast('Apify em falta','Configura a key do Apify nas Configurações','warn'); goView('config'); return; }
   const btn = document.getElementById('btn-mde-fetch');
   const status = document.getElementById('mde-url-status');
@@ -4152,8 +4176,8 @@ async function fetchMDEFromUrl(){
   if(status) status.textContent='A pesquisar no Mobile.de...';
   try{
     const maxItems = 100;
-    // MDE scraper uses urls:[url] (plain strings)
-    const rows = await runApifyActor(APIFY_ACTORS.mde, {urls:[url], maxRecords:maxItems}, maxItems);
+    // MDE scraper uses urls:[{url}] objects (same format as AS24)
+    const rows = await runApifyActor(APIFY_ACTORS.mde, {urls:[{url}], maxRecords:maxItems}, maxItems);
     const tagged = rows.map(r=>({...r,_src:'mde'}));
     files.mde = {rows:tagged, name:'Mobile.de ('+rows.length+')'};
     document.getElementById('pill-mde')?.classList.remove('hidden');
