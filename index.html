@@ -1170,7 +1170,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
               <div style="font-size:11px;color:var(--ink2);">Carro conhecido que estava abaixo do score mínimo, o preço desceu, e agora o score passou o mínimo.</div>
             </div>
             <p style="margin-top:var(--sp3);font-size:11px;color:var(--ink3);">
-              O servidor verifica de hora a hora entre as 9h e as 19h, todos os dias. Notificações chegam ao telemóvel via ntfy.sh e ficam guardadas 7 dias no histórico.
+              O servidor verifica 4 vezes por dia (08h, 12h, 14h30 e 17h30) incluindo fins-de-semana. Notificações chegam ao telemóvel via ntfy.sh e ficam guardadas 7 dias no histórico.
             </p>
           </div>
         </div>
@@ -1238,6 +1238,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
                 <span style="font-size:9px;background:var(--green-l);color:var(--green);padding:2px 8px;border-radius:var(--r-pill);font-weight:700;">ACTUAL</span>
               </div>
               <ul style="margin-left:20px;font-size:11px;">
+                <li>Cron sync reduzido a 4x/dia (08h, 12h, 14h30, 17h30) — economia Apify ~64%</li>
                 <li>Banner beta persistente no topo e secções de uso: aviso beta, confidencialidade, limitação de responsabilidade</li>
                 <li>Melhorias de ISV: audit trail passo-a-passo, intervalos de confiança, validação com AT</li>
                 <li>Tabela de referência por marca/modelo e alertas de sanidade (margem suspeita, CO2 fora de range)</li>
@@ -1266,7 +1267,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
               <strong>Actores Apify:</strong><span style="font-family:var(--mono);font-size:11px;">ivanvs/autoscout-scraper · ivanvs/mobile-de-scraper · dadhalfdev/standvirtual-scraper</span>
               <strong>Modelo IA:</strong><span style="font-family:var(--mono);font-size:11px;">claude-sonnet-4-5</span>
               <strong>Tabela ISV:</strong><span>AT 2026</span>
-              <strong>Cron sync:</strong><span>Todos os dias · 9h às 19h</span>
+              <strong>Cron sync:</strong><span>4x/dia · 08h, 12h, 14h30, 17h30 (inclui fim-de-semana)</span>
             </div>
           </div>
         </div>
