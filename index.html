@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%231B3A6B"/><text x="50" y="72" font-family="sans-serif" font-weight="900" font-size="68" fill="%23D4A017" text-anchor="middle">A</text></svg>">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231B3A6B'/%3E%3Ctext x='50' y='72' font-family='sans-serif' font-weight='900' font-size='68' fill='%23D4A017' text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1B3A6B">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -345,11 +345,13 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
 
 /* Theme toggle button */
 .theme-toggle{
-  position:absolute;top:16px;right:20px;background:none;border:none;cursor:pointer;
-  font-size:14px;color:rgba(255,255,255,.5);padding:6px 10px;border-radius:var(--r);
-  transition:color .15s,background .15s;
+  display:flex;align-items:center;justify-content:center;
+  width:36px;height:36px;margin:0 var(--sp4) var(--sp3);
+  background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.12);cursor:pointer;
+  font-size:16px;padding:0;border-radius:var(--r);
+  transition:all .15s;line-height:1;
 }
-.theme-toggle:hover{color:#fff;background:rgba(255,255,255,.08);}
+.theme-toggle:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);}
 
 /* ── LOADING SKELETONS ─────────────────── */
 .skel{
@@ -409,8 +411,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
 <div class="toast-container" id="toast-container"></div>
 <div class="app">
 <aside class="sidebar" id="sidebar">
-  <div class="sidebar-logo" style="position:relative;">
-    <button class="theme-toggle" onclick="toggleTheme()" title="Tema">🌓</button>
+  <div class="sidebar-logo">
     <div class="logo-mark">Auto<span>Import</span></div>
     <div class="logo-sub">Plataforma de Importação</div>
   </div>
@@ -425,6 +426,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
     <button class="nav-item" onclick="goView('config')"><span class="nav-icon">⚙</span>Configurações</button>
     <button class="nav-item" onclick="goView('sobre')"><span class="nav-icon">ⓘ</span>Sobre</button>
   </nav>
+  <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema claro/escuro">🌓</button>
   <div class="sidebar-footer">v0.1.5 · ISV AT 2026 · 3 Fontes</div>
 </aside>
 
@@ -438,7 +440,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
         <div class="page-sub" id="pg-sub">Resumo e favoritos</div>
       </div>
     </div>
-    <button class="btn btn-primary btn-sm" onclick="resetAndNewAnalise()">+ Nova Análise</button>
+    <button class="btn btn-primary btn-sm" id="topbar-new-btn" onclick="resetAndNewAnalise()">+ Nova Análise</button>
   </div>
 
   <div class="content">
@@ -721,6 +723,14 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
               <input type="checkbox" id="f-has-notes" onchange="renderResults()" style="accent-color:var(--accent);">
               Com as minhas notas
             </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="checkbox" id="f-high-conf" onchange="renderResults()" style="accent-color:var(--accent);">
+              Confiança alta
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="checkbox" id="f-validated" onchange="renderResults()" style="accent-color:var(--accent);">
+              ISV validado ✓
+            </label>
             <button class="btn btn-ghost btn-sm" onclick="clearFilters()" style="font-size:10px;">✕ Limpar filtros</button>
             <div style="margin-left:auto;display:flex;gap:var(--sp2);">
               <button class="btn btn-ghost btn-sm" onclick="favAllFiltered()" style="font-size:10px;" title="Marcar todos os visíveis como favoritos">♡ Favoritar todos</button>
@@ -763,11 +773,10 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
 
     <!-- ══════════ CONFIGURAÇÕES ══════════ -->
     <div class="view" id="view-notificacoes">
-      <div class="topbar">
-        <div><div class="page-title">Notificações</div><div class="page-sub">Últimos 7 dias</div></div>
-        <button class="btn btn-ghost btn-sm" onclick="markAllNotifsRead()">✓ Marcar todas como lidas</button>
-      </div>
       <div class="content">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:var(--sp3);">
+          <button class="btn btn-ghost btn-sm" onclick="markAllNotifsRead()">✓ Marcar todas como lidas</button>
+        </div>
         <div id="notif-empty" class="empty hidden">
           <div class="empty-icon">🔔</div>
           <div class="empty-text">Sem notificações nos últimos 7 dias.<br>Activa o sync automático numa análise para receberes alertas.</div>
@@ -912,9 +921,6 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
         </div>
 
     <div class="view" id="view-sobre">
-      <div class="topbar">
-        <div><div class="page-title">Sobre</div><div class="page-sub">Informação · Privacidade · Changelog</div></div>
-      </div>
       <div class="content" style="max-width:800px;">
         <div class="card">
           <div class="card-hdr"><div class="card-title">📄 Privacidade e Dados</div></div>
@@ -1122,6 +1128,13 @@ function goView(id){
   if(backBtn) backBtn.classList.toggle('hidden', id==='dashboard');
   if(id!==viewHistory[viewHistory.length-1]) viewHistory.push(id);
   if(id==='config')renderConfig();
+  // Hide + Nova Análise button on system pages
+  const newBtn = document.getElementById('topbar-new-btn');
+  if(newBtn){
+    const hideOn = ['notificacoes','sobre','config'];
+    newBtn.style.display = hideOn.includes(id) ? 'none' : '';
+  }
+
   if(id==='dashboard')renderDashboard();
   if(id==='historico')renderHistorico();
   if(id==='notificacoes')renderNotificacoes();
@@ -1251,6 +1264,62 @@ function parseCSV(text){
 // ══════════════════════════════════════════════
 // ISV AT 2026 COMPLETO
 // ══════════════════════════════════════════════
+// Returns detailed breakdown of ISV calculation — used for audit log
+function calcISVAudit(cil,co2,comb,norma,ano,temFiltro){
+  const steps = [];
+  const c=(comb||'').toLowerCase().trim();
+  if(c==='elétrico'||c==='eletrico'){
+    return { value: 0, steps: [{label:'Eléctrico → ISV = 0€', val:0}] };
+  }
+  const idade = new Date().getFullYear() - ano;
+  let cc = cil<=1000 ? cil*1.09-849.03 : cil<=1250 ? cil*1.18-850.69 : cil*5.61-6194.88;
+  cc = Math.max(0, cc);
+  steps.push({label:`Componente cilindrada (${cil}cc)`, val: Math.round(cc)});
+
+  const isD = c==='gasóleo'||c==='gasoleo';
+  const isPH = c==='phev'||c==='híbrido plug-in';
+  const isHM = c==='híbrido mild'||c==='hibrido mild';
+  const n = isPH ? 'WLTP' : (norma||'WLTP').toUpperCase();
+
+  const agw=g=>g<=110?g*.44-43.02:g<=115?g*1.10-115.80:g<=120?g*1.38-147.79:g<=130?g*5.27-619.17:g<=145?g*6.38-762.73:g<=175?g*41.54-5819.56:g<=195?g*51.38-7247.39:g<=235?g*193.01-34190.52:g*233.81-41910.96;
+  const agn=g=>g<=99?g*4.62-427:g<=115?g*8.09-750.99:g<=145?g*52.56-5903.94:g<=175?g*61.24-7140.17:g<=195?g*155.97-23627.27:g*205.65-33390.12;
+  const adw=g=>g<=110?g*1.72-11.50:g<=120?g*18.96-1906.19:g<=140?g*65.04-7360.85:g<=150?g*127.40-16080.57:g<=160?g*160.81-21176.06:g<=170?g*221.69-29227.38:g<=190?g*274.08-36987.98:g*282.35-38271.32;
+  const adn=g=>g<=79?g*5.78-439.04:g<=95?g*23.45-1848.58:g<=120?g*79.22-7195.63:g<=140?g*175.73-18924.92:g<=160?g*195.43-21720.92:g*268.42-33447.90;
+
+  let amb = isD ? (n==='NEDC'?adn(co2):adw(co2)) : (isPH?agw(co2):(n==='NEDC'?agn(co2):agw(co2)));
+  steps.push({label:`Componente ambiental (${co2}g/km ${n} ${isD?'gasóleo':'gasolina'})`, val: Math.round(amb)});
+
+  let bruto = cc + amb;
+  steps.push({label:'Subtotal (cilindrada + ambiental)', val: Math.round(bruto)});
+
+  if(isPH){
+    bruto = Math.max(100, bruto * 0.25);
+    steps.push({label:'Redução PHEV (−75%)', val: Math.round(bruto), type:'reduce'});
+  } else if(isHM){
+    bruto = Math.max(100, bruto * 0.60);
+    steps.push({label:'Redução Híbrido Mild (−40%)', val: Math.round(bruto), type:'reduce'});
+  } else {
+    bruto = Math.max(100, bruto);
+  }
+
+  const ds=[0,.10,.20,.28,.35,.43,.52,.60,.65,.70,.75,.80];
+  const desc = idade<=0 ? 0 : idade<=10 ? ds[Math.min(idade,10)] : ds[11];
+  if(desc > 0){
+    const afterDesc = Math.round(bruto * (1 - desc));
+    steps.push({label:`Desconto idade (${idade} anos → −${Math.round(desc*100)}%)`, val: afterDesc, type:'reduce'});
+    bruto = afterDesc;
+  }
+
+  let isv = Math.max(100, Math.round(bruto));
+
+  if(isD && temFiltro !== true){
+    isv += 500;
+    steps.push({label:'Agravamento (sem filtro DPF)', val: isv, type:'add'});
+  }
+
+  return { value: isv, steps };
+}
+
 function calcISV(cil,co2,comb,norma,ano,temFiltro){
   const c=(comb||'').toLowerCase().trim();
   if(c==='elétrico'||c==='eletrico')return 0;
@@ -1535,12 +1604,12 @@ async function processBatch(batch){
   }).join('\n\n---\n\n');
 
   const prompt=`Normaliza estes anúncios de carros. Devolve APENAS array JSON com campos:
-marca,modelo,submodelo,ano,km,combustivel("Elétrico"|"PHEV"|"Gasolina"|"Gasóleo"|"Híbrido Mild"),co2(g/km),co2_inferred(bool),co2_norma("WLTP"|"NEDC"),cilindrada(cc),cil_inferred(bool),potencia(cv),caixa("Automática"|"Manual"|"Semi-automática"),cor,carrocaria("SUV"|"Berlina"|"Carrinha"|"Coupé"|"Cabrio"|"Monovolume"),emissoes,lugares,iva_dedutivel("Sim"|"Não"|"Desconhecido"),pais,dealer,donos,inspecao,filtro_particulas("Sim"|"Não"|"Desconhecido"),preco,url,foto_url,fonte("AS24"|"MDE"),notas.
+marca,modelo,submodelo,ano,km,combustivel("Elétrico"|"PHEV"|"Gasolina"|"Gasóleo"|"Híbrido Mild"),co2(g/km),co2_inferred(bool),co2_norma("WLTP"|"NEDC"),cilindrada(cc),cil_inferred(bool),potencia(cv),caixa("Automática"|"Manual"|"Semi-automática"),cor,carrocaria("SUV"|"Berlina"|"Carrinha"|"Coupé"|"Cabrio"|"Monovolume"),emissoes,lugares,iva_dedutivel("Sim"|"Não"|"Desconhecido"),pais,dealer,donos,inspecao,filtro_particulas("Sim"|"Não"|"Desconhecido"),preco,url,foto_url,fonte("AS24"|"MDE"),notas,co2_conf("alta"|"média"|"baixa"),cil_conf("alta"|"média"|"baixa"),norma_conf("alta"|"média"|"baixa").
 
 REGRAS:
 Combustível: AS24 "Electric/Gasoline"→PHEV; "Electric"→Elétrico; "Diesel"→Gasóleo. MDE driveType="Electric motor"→Elétrico; "Plug-in Hybrid"→PHEV; "Mild Hybrid"→Híbrido Mild.
 CO2/Cil: Se 0 ou ausente (não-elétrico) → co2_inferred=true mas deixar 0 (segunda passagem trata). Extrair de "43 g/km (comb.)"→43. MDE kW→cv=kW×1.36. AS24 "(160hp)"→extrair.
-Outros: netPrice/amount MDE→iva_dedutivel="Sim". 2020+→WLTP. foto_url=images/0 ou imageUrls/0. Carroçaria PT: Estate→Carrinha,Saloon→Berlina,Coupe→Coupé. Cor PT: Black→Preto,White→Branco,Red→Vermelho,Blue→Azul,Grey→Cinzento,Green→Verde,Silver→Prateado.
+Outros: netPrice/amount MDE→iva_dedutivel="Sim". 2020+→WLTP (norma_conf=alta para 2021+, média para 2020, baixa para 2018-2019). Confianças: co2_conf=alta se explícito no anúncio com unidade, média se inferido do modelo, baixa se calculado. cil_conf=alta se explícito, média se do submodelo conhecido. 2020+→WLTP. foto_url=images/0 ou imageUrls/0. Carroçaria PT: Estate→Carrinha,Saloon→Berlina,Coupe→Coupé. Cor PT: Black→Preto,White→Branco,Red→Vermelho,Blue→Azul,Grey→Cinzento,Green→Verde,Silver→Prateado.
 
 Anúncios:
 ${batchText}
@@ -2091,6 +2160,12 @@ function renderResults(){
   if(document.getElementById('f-has-notes')?.checked){
     filtered = filtered.filter(r => r.userNotes && r.userNotes.trim());
   }
+  if(document.getElementById('f-high-conf')?.checked){
+    filtered = filtered.filter(r => getISVConfidence(r) === 'alta' || r.isv_official);
+  }
+  if(document.getElementById('f-validated')?.checked){
+    filtered = filtered.filter(r => !!r.isv_official);
+  }
 
   const sorted = sortResults(filtered);
   document.getElementById('res-count').textContent = sorted.length + (filtered.length !== calcRows.length ? ' / ' + calcRows.length : '');
@@ -2105,7 +2180,7 @@ function renderResults(){
 }
 
 function clearFilters(){
-  ['f-score-high','f-marg-pos','f-marg-5k','f-has-notes'].forEach(id => {
+  ['f-score-high','f-marg-pos','f-marg-5k','f-has-notes','f-high-conf','f-validated'].forEach(id => {
     const el = document.getElementById(id);
     if(el) el.checked = false;
   });
@@ -2151,6 +2226,8 @@ function buildCarCard(r,i){
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <div style="display:flex;gap:4px;">${srcBadges}</div>
         ${r.score!=null?`<span style="font-family:var(--syne);font-size:13px;font-weight:800;color:${scColor};">${r.score}</span>`:''}
+        ${(()=>{ const conf = getISVConfidence(r); if(conf==='alta' || r.isv_official) return ''; const iconColor = conf==='média'?'var(--amber)':'var(--red)'; const title = conf==='média'?'Confiança média — ISV pode variar':'Confiança baixa — validar dados'; return `<span title="${title}" style="font-size:10px;color:${iconColor};margin-left:4px;cursor:help;">⚠</span>`; })()}
+        ${r.isv_official?'<span title="ISV oficial validado" style="font-size:10px;color:var(--green);margin-left:4px;">✓</span>':''}
       </div>
       <div class="car-card-title">${r.marca} ${r.modelo}</div>
       <div class="car-card-sub">${r.submodelo||''}</div>
@@ -2239,6 +2316,29 @@ function openCarModal(r){
         <div class="cs-item" style="background:transparent;"><div class="cs-val" style="color:var(--amber);">${r.ivaM!=null?fmt(r.ivaM)+'€':'—'}</div><div class="cs-label">IVA Margem (23%)</div></div>
         <div class="cs-item" style="background:transparent;"><div class="cs-val" style="color:${r.ml>=0?'var(--green)':'var(--accent)'};">${r.ml!=null?fmt(r.ml)+'€':'—'}</div><div class="cs-label">Margem Líquida</div></div>
       </div>
+      <div id="isv-audit-section" style="margin-bottom:var(--sp4);padding:var(--sp3);background:var(--surface2);border-radius:var(--r);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp2);">
+          <div style="font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;font-weight:600;">🧮 Como chegámos ao ISV</div>
+          <button onclick="toggleISVAudit()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent);padding:0;" id="isv-audit-toggle">Ver detalhe ▾</button>
+        </div>
+        <div id="isv-audit-content" style="display:none;font-size:12px;"></div>
+      </div>
+
+      <div id="sanity-warnings-section" style="display:none;margin-bottom:var(--sp4);"></div>
+
+      <div id="at-validator-section" style="margin-bottom:var(--sp4);padding:var(--sp3);background:var(--blue-l);border-radius:var(--r);border-left:3px solid var(--blue);">
+        <div style="font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;font-weight:600;margin-bottom:var(--sp2);">🏛 Validar no simulador AT</div>
+        <div style="font-size:12px;color:var(--ink2);margin-bottom:var(--sp2);line-height:1.5;">
+          Confirma o valor oficial no <a href="https://www.portaldasfinancas.gov.pt/at/html/pt/main.html" target="_blank" style="color:var(--blue);font-weight:600;">Portal das Finanças</a> (procura por "Simulador ISV").
+        </div>
+        <div style="display:flex;gap:var(--sp2);align-items:center;flex-wrap:wrap;">
+          <label style="font-size:11px;color:var(--ink3);">ISV oficial (€):</label>
+          <input type="number" id="isv-official-input" style="width:120px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--r);font-family:var(--mono);font-size:12px;" placeholder="8200">
+          <button onclick="saveOfficialISV()" class="btn btn-primary btn-sm">Guardar como oficial</button>
+          <span id="isv-official-status" style="font-size:11px;color:var(--green);"></span>
+        </div>
+      </div>
+
       <div id="price-history-section" style="display:none;margin-bottom:var(--sp4);padding:var(--sp3);background:var(--surface2);border-radius:var(--r);">
         <div style="font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:var(--sp2);font-weight:600;">📈 Histórico de preços</div>
         <div id="price-history-content" style="font-size:12px;color:var(--ink2);"></div>
@@ -2275,6 +2375,11 @@ function openCarModal(r){
     </div>`;
   document.getElementById('modal-overlay').classList.remove('hidden');
   document.getElementById('modal-overlay')._car=r;
+  renderISVAudit(r);
+  renderSanityWarnings(r);
+  // Pre-fill official ISV if already validated
+  const officialInput = document.getElementById('isv-official-input');
+  if(officialInput && r.isv_official) officialInput.value = r.isv_official;
   if(r.url) loadPriceHistory(r.url);
 }
 
@@ -4042,11 +4147,10 @@ async function loadPriceHistory(carUrl){
 }
 
 // ── PWA SERVICE WORKER ────────────────────────
-if('serviceWorker' in navigator){
+// Only register on HTTPS + non-iOS (iOS has app-bound restrictions)
+if('serviceWorker' in navigator && location.protocol === 'https:' && !/(iPad|iPhone|iPod)/.test(navigator.userAgent)){
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(err => {
-      console.warn('Service worker registration failed:', err);
-    });
+    navigator.serviceWorker.register('sw.js').catch(() => {/* silent */});
   });
 }
 
@@ -4088,6 +4192,305 @@ function carSkeletonHtml(count){
 function showCarSkeleton(count){
   const grid = document.getElementById('car-grid');
   if(grid) grid.innerHTML = carSkeletonHtml(count || 6);
+}
+
+// ── ISV RANGE based on data confidence ───────
+function calcISVRange(r){
+  const baseISV = calcISV(r.cilindrada||0, r.co2||0, r.combustivel, r.co2_norma||'WLTP', r.ano||2020, r.filtro_particulas==='Sim');
+  if(baseISV === 0) return { min: 0, max: 0, value: 0, spread: 0 };
+
+  // Calculate variance based on confidence levels
+  let co2Spread = 0;
+  if(r.co2_conf === 'baixa' || r.co2_missing) co2Spread = 15;  // ±15 g/km
+  else if(r.co2_conf === 'média' || r.co2_inferred) co2Spread = 8;
+  else co2Spread = 0;  // alta confiança
+
+  let cilSpread = 0;
+  if(r.cil_conf === 'baixa' || r.cil_missing) cilSpread = 200;
+  else if(r.cil_conf === 'média' || r.cil_inferred) cilSpread = 100;
+
+  // Try alternate norma if confidence is low
+  const altNorma = (r.co2_norma||'WLTP') === 'WLTP' ? 'NEDC' : 'WLTP';
+  const normaAlt = r.norma_conf === 'baixa'
+    ? calcISV(r.cilindrada||0, r.co2||0, r.combustivel, altNorma, r.ano||2020, r.filtro_particulas==='Sim')
+    : baseISV;
+
+  // Compute ISV at extremes
+  const low  = calcISV((r.cilindrada||0)-cilSpread, (r.co2||0)-co2Spread, r.combustivel, r.co2_norma||'WLTP', r.ano||2020, r.filtro_particulas==='Sim');
+  const high = calcISV((r.cilindrada||0)+cilSpread, (r.co2||0)+co2Spread, r.combustivel, r.co2_norma||'WLTP', r.ano||2020, r.filtro_particulas==='Sim');
+
+  const min = Math.min(baseISV, normaAlt, low, high);
+  const max = Math.max(baseISV, normaAlt, low, high);
+  const spread = max - min;
+
+  return { min, max, value: baseISV, spread, alternateNorma: r.norma_conf === 'baixa' ? normaAlt : null };
+}
+
+function getISVConfidence(r){
+  const fields = [r.co2_conf, r.cil_conf, r.norma_conf].filter(Boolean);
+  if(r.co2_missing || r.cil_missing) return 'baixa';
+  if(!fields.length) return 'média';  // legacy data without confidence fields
+  const baixaCount = fields.filter(f => f === 'baixa').length;
+  const mediaCount = fields.filter(f => f === 'média').length;
+  if(baixaCount >= 1) return 'baixa';
+  if(mediaCount >= 2) return 'baixa';
+  if(mediaCount === 1) return 'média';
+  return 'alta';
+}
+
+// ── SANITY CHECKS — margem ou valores suspeitos ───
+function getSanityWarnings(r){
+  const warnings = [];
+  const margPct = r.preco > 0 ? (r.ml || 0) / r.preco * 100 : 0;
+
+  // Margem líquida anormalmente alta (>25% do preço de compra)
+  if(margPct > 25){
+    warnings.push({
+      severity: 'high',
+      msg: `Margem líquida invulgarmente alta (${Math.round(margPct)}% do preço de compra). Verifica CO2, cilindrada e preço de referência PT.`
+    });
+  }
+
+  // Margem muito negativa (>15% abaixo)
+  if(r.ml != null && r.ml < 0 && Math.abs(r.ml) / r.preco > 0.15){
+    warnings.push({
+      severity: 'high',
+      msg: `Prejuízo significativo (${Math.round(Math.abs(margPct))}%). Carro possivelmente mal avaliado — verifica dados.`
+    });
+  }
+
+  // ISV = 100 (mínimo legal) com combustível não-eléctrico
+  if(r.isv === 100 && r.combustivel !== 'Elétrico'){
+    warnings.push({
+      severity: 'medium',
+      msg: 'ISV no valor mínimo legal (100€) — verifica CO2 e cilindrada.'
+    });
+  }
+
+  // Confiança baixa em qualquer campo-chave
+  const conf = getISVConfidence(r);
+  if(conf === 'baixa'){
+    warnings.push({
+      severity: 'medium',
+      msg: 'Confiança baixa nos dados — valida CO2/cilindrada/norma manualmente no anúncio ou no simulador AT.'
+    });
+  }
+
+  // CO2 extraordinariamente baixo para combustível fóssil
+  if(['Gasolina','Gasóleo'].includes(r.combustivel) && r.co2 > 0 && r.co2 < 80){
+    warnings.push({
+      severity: 'medium',
+      msg: `CO2 ${r.co2}g/km é invulgarmente baixo para ${r.combustivel}. Possível erro.`
+    });
+  }
+
+  // Sem CO2 mas combustível fóssil
+  if(['Gasolina','Gasóleo'].includes(r.combustivel) && (!r.co2 || r.co2 === 0)){
+    warnings.push({
+      severity: 'high',
+      msg: 'CO2 em falta — ISV pode estar subestimado. Consulta o anúncio ou simulador AT.'
+    });
+  }
+
+  return warnings;
+}
+
+// ── REFERENCE DATA — marca/modelo → ranges esperados ─────
+const MODEL_REFERENCE = [
+  // BMW
+  {marca:'BMW', modelo:'320d', anoMin:2015, anoMax:2018, co2:[109,120], cil:[1995,2000], normaEsperada:'NEDC/WLTP'},
+  {marca:'BMW', modelo:'320d', anoMin:2019, anoMax:2024, co2:[109,135], cil:[1995,2000], normaEsperada:'WLTP'},
+  {marca:'BMW', modelo:'320i', anoMin:2019, anoMax:2024, co2:[145,170], cil:[1998,1998], normaEsperada:'WLTP'},
+  {marca:'BMW', modelo:'330e', anoMin:2016, anoMax:2024, co2:[30,50], cil:[1998,1998], normaEsperada:'WLTP', comb:'PHEV'},
+  {marca:'BMW', modelo:'M3', anoMin:2020, anoMax:2024, co2:[225,255], cil:[2993,2993], normaEsperada:'WLTP'},
+  {marca:'BMW', modelo:'M5', anoMin:2018, anoMax:2024, co2:[242,260], cil:[4395,4395], normaEsperada:'WLTP'},
+  {marca:'BMW', modelo:'X3', anoMin:2018, anoMax:2024, co2:[140,200], cil:[1998,2993]},
+  {marca:'BMW', modelo:'X5', anoMin:2019, anoMax:2024, co2:[150,220], cil:[2993,4395]},
+
+  // Audi
+  {marca:'Audi', modelo:'A4', anoMin:2019, anoMax:2024, co2:[120,165], cil:[1984,1984], normaEsperada:'WLTP'},
+  {marca:'Audi', modelo:'A6', anoMin:2019, anoMax:2024, co2:[135,200], cil:[1984,2967]},
+  {marca:'Audi', modelo:'Q5', anoMin:2018, anoMax:2024, co2:[145,200], cil:[1984,2967]},
+  {marca:'Audi', modelo:'RS6', anoMin:2020, anoMax:2024, co2:[245,280], cil:[3996,3996]},
+
+  // Mercedes
+  {marca:'Mercedes-Benz', modelo:'C220d', anoMin:2018, anoMax:2024, co2:[115,140], cil:[1950,2143]},
+  {marca:'Mercedes-Benz', modelo:'C300', anoMin:2019, anoMax:2024, co2:[145,175], cil:[1991,1991]},
+  {marca:'Mercedes-Benz', modelo:'E220d', anoMin:2019, anoMax:2024, co2:[125,145], cil:[1950,1950]},
+
+  // VW
+  {marca:'Volkswagen', modelo:'Golf', anoMin:2019, anoMax:2024, co2:[105,160], cil:[999,1984]},
+  {marca:'Volkswagen', modelo:'Passat', anoMin:2019, anoMax:2024, co2:[115,155], cil:[1498,1984]},
+
+  // Porsche
+  {marca:'Porsche', modelo:'911', anoMin:2019, anoMax:2024, co2:[200,265], cil:[2981,3800]},
+  {marca:'Porsche', modelo:'Cayenne', anoMin:2019, anoMax:2024, co2:[175,270], cil:[2995,3996]},
+
+  // Tesla (elétricos)
+  {marca:'Tesla', modelo:'Model 3', anoMin:2019, anoMax:2024, co2:[0,0], cil:[0,0], comb:'Elétrico'},
+  {marca:'Tesla', modelo:'Model Y', anoMin:2020, anoMax:2024, co2:[0,0], cil:[0,0], comb:'Elétrico'},
+];
+
+function findModelReference(r){
+  if(!r.marca || !r.modelo) return null;
+  const marca = r.marca.toLowerCase();
+  const modelo = r.modelo.toLowerCase();
+  return MODEL_REFERENCE.find(ref =>
+    ref.marca.toLowerCase() === marca &&
+    modelo.includes(ref.modelo.toLowerCase()) &&
+    (!ref.anoMin || r.ano >= ref.anoMin) &&
+    (!ref.anoMax || r.ano <= ref.anoMax)
+  );
+}
+
+function validateAgainstReference(r){
+  const ref = findModelReference(r);
+  if(!ref) return [];
+  const warnings = [];
+
+  if(ref.co2 && r.co2 > 0){
+    const [minCO2, maxCO2] = ref.co2;
+    if(r.co2 < minCO2 - 10 || r.co2 > maxCO2 + 15){
+      warnings.push({
+        severity: 'medium',
+        msg: `CO2 ${r.co2}g/km fora do range típico para ${ref.marca} ${ref.modelo} (${minCO2}-${maxCO2}g/km).`
+      });
+    }
+  }
+
+  if(ref.cil && r.cilindrada > 0){
+    const [minCil, maxCil] = ref.cil;
+    if(r.cilindrada < minCil - 50 || r.cilindrada > maxCil + 100){
+      warnings.push({
+        severity: 'medium',
+        msg: `Cilindrada ${r.cilindrada}cc fora do range típico (${minCil}-${maxCil}cc).`
+      });
+    }
+  }
+
+  if(ref.comb && r.combustivel !== ref.comb){
+    warnings.push({
+      severity: 'high',
+      msg: `Combustível "${r.combustivel}" não bate com o esperado "${ref.comb}" para este modelo.`
+    });
+  }
+
+  return warnings;
+}
+
+// ── ISV AUDIT LOG ────────────────────────
+function renderISVAudit(r){
+  const content = document.getElementById('isv-audit-content');
+  if(!content) return;
+
+  const audit = calcISVAudit(r.cilindrada||0, r.co2||0, r.combustivel, r.co2_norma||'WLTP', r.ano||2020, r.filtro_particulas==='Sim');
+  const range = calcISVRange(r);
+  const conf = getISVConfidence(r);
+  const confColor = conf === 'alta' ? 'var(--green)' : conf === 'média' ? 'var(--amber)' : 'var(--red)';
+  const confIcon = conf === 'alta' ? '✓' : conf === 'média' ? '⚠' : '!';
+
+  let html = '<div style="display:flex;align-items:baseline;gap:var(--sp2);margin-bottom:var(--sp3);">';
+  html += `<div style="font-family:var(--syne);font-size:20px;font-weight:700;color:var(--accent);">${audit.value.toLocaleString('pt-PT')}€</div>`;
+  if(range.spread > 50){
+    html += `<div style="font-size:11px;color:var(--ink3);">(${range.min.toLocaleString('pt-PT')}€ — ${range.max.toLocaleString('pt-PT')}€)</div>`;
+  }
+  html += `<div style="margin-left:auto;font-size:10px;padding:3px 8px;border-radius:var(--r-pill);background:${confColor};color:#fff;font-weight:600;">${confIcon} Confiança ${conf}</div>`;
+  html += '</div>';
+
+  // Steps table
+  html += '<div style="border-top:1px solid var(--border);padding-top:var(--sp2);">';
+  audit.steps.forEach(step => {
+    const color = step.type === 'reduce' ? 'var(--green)' : step.type === 'add' ? 'var(--red)' : 'var(--ink2)';
+    const sign = step.type === 'reduce' ? '→' : step.type === 'add' ? '+' : '=';
+    html += `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px;">
+      <span style="color:var(--ink3);">${step.label}</span>
+      <span style="color:${color};font-weight:600;font-family:var(--mono);">${sign} ${step.val.toLocaleString('pt-PT')}€</span>
+    </div>`;
+  });
+  html += '</div>';
+
+  // Input confidence breakdown
+  if(r.co2_conf || r.cil_conf || r.norma_conf){
+    html += '<div style="margin-top:var(--sp2);padding-top:var(--sp2);border-top:1px solid var(--border);font-size:10px;color:var(--ink3);">';
+    html += 'Confiança: ';
+    if(r.co2_conf) html += `CO2 ${r.co2_conf} · `;
+    if(r.cil_conf) html += `Cilindrada ${r.cil_conf} · `;
+    if(r.norma_conf) html += `Norma ${r.norma_conf}`;
+    html += '</div>';
+  }
+
+  // Alternate norma warning
+  if(range.alternateNorma && range.alternateNorma !== audit.value){
+    html += `<div style="margin-top:var(--sp2);padding:var(--sp2);background:var(--amber-l);border-radius:var(--r);font-size:11px;color:var(--amber);">⚠ Se a norma fosse a outra, ISV seria ${range.alternateNorma.toLocaleString('pt-PT')}€</div>`;
+  }
+
+  // Official ISV if already validated
+  if(r.isv_official){
+    const diff = r.isv_official - audit.value;
+    html += `<div style="margin-top:var(--sp2);padding:var(--sp2);background:var(--green-l);border-radius:var(--r);font-size:11px;color:var(--green);font-weight:600;">✓ ISV oficial validado: ${r.isv_official.toLocaleString('pt-PT')}€ (${diff >= 0 ? '+' : ''}${diff}€ vs estimado)</div>`;
+  }
+
+  content.innerHTML = html;
+}
+
+function toggleISVAudit(){
+  const content = document.getElementById('isv-audit-content');
+  const btn = document.getElementById('isv-audit-toggle');
+  if(!content) return;
+  const isHidden = content.style.display === 'none';
+  content.style.display = isHidden ? 'block' : 'none';
+  if(btn) btn.textContent = isHidden ? 'Ocultar ▴' : 'Ver detalhe ▾';
+}
+
+function renderSanityWarnings(r){
+  const section = document.getElementById('sanity-warnings-section');
+  if(!section) return;
+  const warnings = [...getSanityWarnings(r), ...validateAgainstReference(r)];
+  if(warnings.length === 0){
+    section.style.display = 'none';
+    return;
+  }
+  let html = '';
+  warnings.forEach(w => {
+    const icon = w.severity === 'high' ? '⚠' : 'ℹ';
+    const bg = w.severity === 'high' ? 'var(--red-l)' : 'var(--amber-l)';
+    const color = w.severity === 'high' ? 'var(--red)' : 'var(--amber)';
+    html += `<div style="padding:var(--sp3);background:${bg};border-left:3px solid ${color};border-radius:var(--r);margin-bottom:var(--sp2);font-size:11px;color:${color};line-height:1.5;"><strong>${icon}</strong> ${w.msg}</div>`;
+  });
+  section.innerHTML = html;
+  section.style.display = 'block';
+}
+
+function saveOfficialISV(){
+  const overlay = document.getElementById('modal-overlay');
+  const car = overlay?._car;
+  if(!car){ showToast('Erro','Carro não encontrado','error'); return; }
+
+  const input = document.getElementById('isv-official-input');
+  const val = parseInt(input?.value);
+  if(isNaN(val) || val < 0){
+    showToast('Valor inválido','Insere o ISV oficial em €','warn');
+    return;
+  }
+
+  car.isv_official = val;
+  car.isv = val;  // Override calculated ISV with official
+
+  // Recalculate margins with new ISV
+  const updated = calcMarg(car);
+  Object.assign(car, updated);
+
+  // Update in calcRows
+  const idx = calcRows.findIndex(c => c.url === car.url);
+  if(idx >= 0) Object.assign(calcRows[idx], car);
+
+  showToast('✓ ISV oficial guardado', val.toLocaleString('pt-PT') + '€', 'success');
+
+  // Refresh modal with new data
+  renderISVAudit(car);
+  renderSanityWarnings(car);
+  const statusEl = document.getElementById('isv-official-status');
+  if(statusEl) statusEl.textContent = '✓ Guardado';
 }
 
 </script>
