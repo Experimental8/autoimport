@@ -649,7 +649,11 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
                   </div>
                 </div>
               </div>
-              <div id="step1-note" class="alert alert-info hidden">Pelo menos um ficheiro carregado.</div>
+            </div>
+
+            <!-- Botão "Continuar" visível em ambos os modos -->
+            <div id="step1-note" class="alert alert-info hidden" style="margin-top:var(--sp3);">Pelo menos uma fonte carregada.</div>
+            <div style="margin-top:var(--sp4);display:flex;justify-content:flex-end;">
               <button class="btn btn-primary" id="btn-step1-next" onclick="goStep(2)" disabled>Continuar →</button>
             </div>
 
