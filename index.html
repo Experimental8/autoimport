@@ -4767,22 +4767,33 @@ setTimeout(checkResumeAnalysis, 800);
 
 // Refresh notifications every 5 minutes
 setInterval(() => { if(getServerUrl()) loadNotificacoes(); }, 5 * 60 * 1000);
-// Send a confirmation notification to ntfy channel
+// Send a confirmation notification to ntfy channel (via servidor — evita CORS no browser)
 async function sendSyncConfirmationNotification(channel, analysisName){
   if(!channel) return false;
+  const serverUrl = getServerUrl();
+  if(!serverUrl){
+    console.warn('ntfy: servidor não configurado, notificação não enviada');
+    return false;
+  }
   try{
-    const resp = await fetch('https://ntfy.sh/' + encodeURIComponent(channel), {
+    const resp = await fetch(serverUrl + '/notify', {
       method: 'POST',
-      headers: {
-        'Title': '✓ Sync activado: ' + analysisName,
-        'Priority': 'default',
-        'Tags': 'white_check_mark,bell'
-      },
-      body: 'Vais receber notificações 4x/dia (08h, 12h, 14h30, 17h30) quando aparecerem novos anúncios ou descidas de preço.'
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        channel,
+        title: '✓ Sync activado: ' + analysisName,
+        message: 'Vais receber notificações 4x/dia (08h, 12h, 14h30, 17h30) quando aparecerem novos anúncios ou descidas de preço.',
+        priority: 'default',
+        tags: 'white_check_mark,bell'
+      })
     });
+    if(!resp.ok){
+      const t = await resp.text().catch(()=>'');
+      console.error('ntfy via servidor falhou:', resp.status, t);
+    }
     return resp.ok;
   } catch(e){
-    console.warn('ntfy notification failed:', e.message);
+    console.error('sendSyncConfirmationNotification error:', e);
     return false;
   }
 }
@@ -4913,31 +4924,36 @@ async function saveSyncConfig(e, i){
     } catch(err){ console.warn('Server push failed:', err.message); }
   }
 
-  // Feedback
-  if(syncEnabled && serverOk){
-    const parts = [];
-    if(urlsChanged) parts.push(`${searchUrls.length} URLs`);
-    if(scoreChanged) parts.push(`score ${minScore}`);
-    if(channelChanged) parts.push('canal ntfy');
-    const summary = parts.length ? 'Actualizado: ' + parts.join(', ') : 'Configuração confirmada';
-    showToast('✓ Guardado no servidor', summary, 'success');
+  // Feedback do guardar
+  const parts = [];
+  if(urlsChanged) parts.push(`${searchUrls.length} URLs`);
+  if(scoreChanged) parts.push(`score ${minScore}`);
+  if(channelChanged) parts.push('canal ntfy');
+  const summary = parts.length ? 'Actualizado: ' + parts.join(', ') : 'Configuração confirmada';
 
-    // Send ntfy confirmation on every save (user wants this)
-    if(ntfyChannel){
-      sendSyncConfigNotification(ntfyChannel, a.name, {
-        urls: searchUrls.length,
-        score: minScore,
-        changes: anyChange
-      }).then(ok => {
-        if(ok){
-          showToast('📱 Notificação enviada', 'Verifica o telemóvel', 'success');
-        }
-      });
+  if(serverOk || !serverUrl){
+    showToast('✓ Guardado', summary, 'success');
+  } else {
+    showToast('⚠ Guardado local', 'Servidor offline · ' + summary, 'warn');
+  }
+
+  // Enviar notificação ntfy SEMPRE que há canal preenchido
+  // (independente de sync ON/OFF — serve para testar o canal)
+  if(ntfyChannel){
+    showToast('⏳ A enviar notificação...', 'Canal: ' + ntfyChannel, 'info');
+    const sent = await sendSyncConfigNotification(ntfyChannel, a.name, {
+      urls: searchUrls.length,
+      score: minScore,
+      changes: anyChange,
+      syncEnabled
+    });
+    if(sent){
+      showToast('📱 Notificação enviada', 'Verifica o telemóvel em 1-2s', 'success');
+    } else {
+      showToast('✗ ntfy falhou', 'Verifica se o canal "' + ntfyChannel + '" está bem escrito', 'error');
     }
-  } else if(!syncEnabled){
-    showToast('Sync desactivado', a.name, 'info');
-  } else if(!serverOk){
-    showToast('⚠ Servidor offline', 'Guardado localmente mas não sincronizado', 'warn');
+  } else if(syncEnabled){
+    showToast('⚠ Sem canal ntfy', 'Sem canal preenchido não recebes notificações', 'warn');
   }
 
   renderHistorico();
@@ -4946,22 +4962,32 @@ async function saveSyncConfig(e, i){
 // Send notification on config save — shows what changed
 async function sendSyncConfigNotification(channel, analysisName, info){
   if(!channel) return false;
+  const serverUrl = getServerUrl();
+  if(!serverUrl){
+    console.warn('ntfy: servidor não configurado');
+    return false;
+  }
   try{
-    const body = info.changes
-      ? `Configuração actualizada: ${info.urls} URL${info.urls!==1?'s':''}, score mín ${info.score}. Sync 4x/dia (08h, 12h, 14h30, 17h30).`
-      : `Sync confirmada. ${info.urls} URL${info.urls!==1?'s':''}, score mín ${info.score}. Sync 4x/dia (08h, 12h, 14h30, 17h30).`;
-    const resp = await fetch('https://ntfy.sh/' + encodeURIComponent(channel), {
+    const statusTxt = info.syncEnabled ? '✓ Sync ACTIVO' : '○ Sync inactivo';
+    const body = `${statusTxt}\n${info.urls} URL${info.urls!==1?'s':''} · Score mín ${info.score}\nSync: 08h, 12h, 14h30, 17h30 (diário)`;
+    const resp = await fetch(serverUrl + '/notify', {
       method: 'POST',
-      headers: {
-        'Title': '🔔 ' + analysisName,
-        'Priority': 'low',
-        'Tags': 'gear,bell'
-      },
-      body: body
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        channel,
+        title: '⚙ Config guardada: ' + analysisName,
+        message: body,
+        priority: 'default',
+        tags: 'gear,white_check_mark'
+      })
     });
+    if(!resp.ok){
+      const t = await resp.text().catch(()=>'');
+      console.error('ntfy via servidor falhou:', resp.status, t);
+    }
     return resp.ok;
   } catch(e){
-    console.warn('ntfy save notification failed:', e.message);
+    console.error('sendSyncConfigNotification error:', e);
     return false;
   }
 }
