@@ -776,8 +776,11 @@ const DEF_CFG = {
   legal:{'Inspeção IPO':76,'DAV/Alfândega':35,'Homologação COC':60,'Registo+DUA':55,'Margem administrativa':200,'Margem preparação':2000}
 };
 let cfg = JSON.parse(localStorage.getItem('ai_cfg2')||'null') || DEF_CFG;
-let favs = JSON.parse(localStorage.getItem('ai_favs')||'[]');
-let analyses = JSON.parse(localStorage.getItem('ai_analyses')||'[]');
+let favs = [];
+let analyses = [];
+// Load from localStorage immediately for fast render
+try { favs     = JSON.parse(localStorage.getItem('ai_favs')     || '[]'); } catch { favs = []; }
+try { analyses = JSON.parse(localStorage.getItem('ai_analyses') || '[]'); } catch { analyses = []; }
 
 // Current analysis state
 let originRows = []; // AS24 + Mobile.de combined
@@ -3457,6 +3460,16 @@ function initConfigStatus(){
   });
 }
 
+// Load from server after page is ready
+window.addEventListener('load', async () => {
+  if(!getServerUrl()) return;
+  await loadAnalyses();
+  await loadFavourites();
+  renderDashboard();
+  if(document.getElementById('view-historico')?.classList.contains('active')) renderHistorico();
+  updateFavBadge();
+  updateHistBadge();
+});
 </script>
 </body>
 </html>
