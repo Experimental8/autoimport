@@ -374,6 +374,11 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
 </style>
 </head>
 <body>
+<div id="beta-banner" style="display:none;background:linear-gradient(90deg, #B8860B 0%, #D4A017 100%);color:#fff;padding:8px var(--sp4);font-size:11px;font-family:var(--mono);letter-spacing:.03em;display:flex;align-items:center;justify-content:center;gap:var(--sp3);position:relative;z-index:110;">
+  <span>⚠ <strong>VERSÃO BETA</strong> · Uso confidencial — toda a informação é coberta por acordo implícito de confidencialidade. <a href="#" onclick="event.preventDefault();goView('sobre');" style="color:#fff;text-decoration:underline;font-weight:600;">Ver detalhes →</a></span>
+  <button onclick="dismissBetaBanner()" title="Ocultar" style="background:none;border:1px solid rgba(255,255,255,.4);color:#fff;width:20px;height:20px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;padding:0;line-height:1;">✕</button>
+</div>
+
 <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
 <!-- MODAL -->
@@ -918,84 +923,276 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
             </div>
           </div>
         </div>
+</div>
+    </div>
 
     <div class="view" id="view-sobre">
-      <div class="content" style="max-width:800px;">
-        <div class="card">
-          <div class="card-hdr"><div class="card-title">📄 Privacidade e Dados</div></div>
-          <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
-            <p style="margin-bottom:12px;"><strong style="color:var(--ink);">Onde ficam os teus dados:</strong></p>
-            <ul style="margin-left:20px;margin-bottom:16px;">
-              <li style="margin-bottom:6px;"><strong>API Keys</strong> (Anthropic, Apify, Brave) — <em>localStorage do teu browser</em>, nunca enviadas a servidores terceiros.</li>
-              <li style="margin-bottom:6px;"><strong>Análises e favoritos</strong> — <em>localStorage do teu browser</em>.</li>
-              <li style="margin-bottom:6px;"><strong>Metadados das análises</strong> (nome, data, URLs de pesquisa) — enviados ao servidor Railway quando guardas ou activas sync. Os dados dos carros individuais ficam apenas no browser.</li>
-              <li style="margin-bottom:6px;"><strong>Notificações</strong> — guardadas 7 dias no servidor Railway, partilhadas entre os teus dispositivos.</li>
-            </ul>
-            <p style="margin-bottom:12px;"><strong style="color:var(--ink);">Serviços externos usados:</strong></p>
-            <ul style="margin-left:20px;">
-              <li style="margin-bottom:4px;">Anthropic (API Claude) — processamento IA dos anúncios</li>
-              <li style="margin-bottom:4px;">Apify — scraping de AutoScout24, Mobile.de, StandVirtual</li>
-              <li style="margin-bottom:4px;">Brave Search — pesquisa de dados técnicos (CO2, cilindrada)</li>
-              <li style="margin-bottom:4px;">ntfy.sh — notificações push no telemóvel</li>
-              <li style="margin-bottom:4px;">Railway — servidor de sync (opcional)</li>
-            </ul>
+      <div class="content" style="max-width:900px;">
+
+        <!-- Header banner -->
+        <div style="background:linear-gradient(135deg, var(--accent) 0%, #0F2340 100%);color:#fff;border-radius:var(--r-lg);padding:var(--sp5);margin-bottom:var(--sp4);">
+          <div style="display:flex;align-items:center;gap:var(--sp3);margin-bottom:var(--sp3);">
+            <div style="width:48px;height:48px;background:var(--gold);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-family:var(--syne);font-size:28px;font-weight:800;color:var(--accent);">A</div>
+            <div>
+              <div style="font-family:var(--syne);font-size:22px;font-weight:700;letter-spacing:-.3px;">AutoImport</div>
+              <div style="font-size:11px;color:rgba(255,255,255,.7);">Plataforma de Importação de Automóveis</div>
+            </div>
+          </div>
+          <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,.85);">
+            Ferramenta profissional para análise de oportunidades de importação de automóveis da UE para Portugal. Integra scraping automático, IA para normalização de dados, cálculo de ISV segundo tabela AT 2026, comparação com mercado português e sistema de notificações.
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-hdr"><div class="card-title">💰 Custos aproximados por análise</div></div>
-          <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
-            <p style="margin-bottom:10px;">Por cada 100 carros processados:</p>
-            <ul style="margin-left:20px;">
-              <li style="margin-bottom:4px;"><strong>Anthropic API:</strong> ≈ $1.50 ($3 por 1M tokens de input, $15 por 1M de output)</li>
-              <li style="margin-bottom:4px;"><strong>Apify (AS24/MDE):</strong> ≈ $0.30 por actor</li>
-              <li style="margin-bottom:4px;"><strong>Brave Search:</strong> grátis até 2.000 queries/mês</li>
-            </ul>
-            <p style="margin-top:12px;color:var(--ink3);font-size:11px;">Valores aproximados — o custo real depende da complexidade dos anúncios. O sistema mostra a estimativa antes de iniciar o processamento.</p>
+        <!-- Stats rápidas -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp3);margin-bottom:var(--sp4);">
+          <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r-lg);padding:var(--sp3);text-align:center;">
+            <div id="sobre-stat-analyses" style="font-family:var(--syne);font-size:22px;font-weight:800;color:var(--accent);">—</div>
+            <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;">Análises</div>
+          </div>
+          <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r-lg);padding:var(--sp3);text-align:center;">
+            <div id="sobre-stat-favs" style="font-family:var(--syne);font-size:22px;font-weight:800;color:var(--accent);">—</div>
+            <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;">Favoritos</div>
+          </div>
+          <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r-lg);padding:var(--sp3);text-align:center;">
+            <div id="sobre-stat-notifs" style="font-family:var(--syne);font-size:22px;font-weight:800;color:var(--accent);">—</div>
+            <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;">Notificações</div>
+          </div>
+          <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r-lg);padding:var(--sp3);text-align:center;">
+            <div id="sobre-stat-server" style="font-family:var(--syne);font-size:14px;font-weight:800;color:var(--ink3);margin-top:4px;">—</div>
+            <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;">Servidor</div>
           </div>
         </div>
 
+        <!-- AVISO BETA -->
+        <div class="card" style="border-left:4px solid var(--gold);">
+          <div class="card-hdr" style="background:linear-gradient(90deg, var(--amber-l) 0%, transparent 100%);">
+            <div class="card-title">⚠ Versão Beta · Aviso de utilização</div>
+          </div>
+          <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
+            <p style="margin-bottom:10px;">Esta plataforma encontra-se em <strong style="color:var(--ink);">fase beta activa de desenvolvimento</strong>. Isto significa que:</p>
+            <ul style="margin-left:20px;margin-bottom:10px;">
+              <li style="margin-bottom:4px;">As funcionalidades estão em constante evolução e podem mudar sem aviso</li>
+              <li style="margin-bottom:4px;">Pode conter erros, bugs ou cálculos imprecisos — reporta sempre que detectares</li>
+              <li style="margin-bottom:4px;">Os valores apresentados são <strong>estimativas</strong> e não substituem a consulta oficial aos organismos competentes</li>
+              <li style="margin-bottom:4px;">Backups dos teus dados (API keys, análises) são da tua responsabilidade</li>
+            </ul>
+            <p style="font-size:11px;color:var(--ink3);">Versão actual: <strong style="color:var(--accent);">v0.1.5</strong> · Última actualização: Abril 2026</p>
+          </div>
+        </div>
+
+        <!-- CONFIDENCIALIDADE -->
+        <div class="card" style="border-left:4px solid var(--accent);">
+          <div class="card-hdr" style="background:linear-gradient(90deg, var(--accent-l) 0%, transparent 100%);">
+            <div class="card-title">🔐 Confidencialidade e uso da plataforma</div>
+          </div>
+          <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
+            <p style="margin-bottom:10px;">Ao utilizar esta plataforma, o utilizador <strong style="color:var(--ink);">compromete-se implicitamente</strong> a manter confidencialidade absoluta sobre:</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp3);margin-bottom:var(--sp3);">
+              <div style="background:var(--surface2);padding:var(--sp3);border-radius:var(--r);">
+                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:600;">Lógica de negócio</div>
+                <div style="font-size:11px;">Fórmulas de cálculo, sistema de score, algoritmo de avaliação de margem, tabelas de referência por modelo</div>
+              </div>
+              <div style="background:var(--surface2);padding:var(--sp3);border-radius:var(--r);">
+                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:600;">Prompts de IA</div>
+                <div style="font-size:11px;">Estruturas de extracção usadas no Claude, regras de inferência, sistema de classificação de confiança</div>
+              </div>
+              <div style="background:var(--surface2);padding:var(--sp3);border-radius:var(--r);">
+                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:600;">Arquitectura</div>
+                <div style="font-size:11px;">Integração de APIs, configuração de actores Apify, infraestrutura de servidor, sistema de sync</div>
+              </div>
+              <div style="background:var(--surface2);padding:var(--sp3);border-radius:var(--r);">
+                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:600;">Código-fonte</div>
+                <div style="font-size:11px;">Não partilhar, copiar, distribuir ou fazer engenharia inversa da plataforma ou de partes dela</div>
+              </div>
+            </div>
+            <p style="background:var(--amber-l);color:var(--amber);padding:var(--sp3);border-radius:var(--r);border-left:3px solid var(--amber);font-size:11px;margin-bottom:10px;">
+              ⚠ Não partilhar URLs de acesso, capturas de ecrã detalhadas de funcionamento, vídeos demonstrativos ou documentação técnica com terceiros.
+            </p>
+            <p style="font-size:11px;color:var(--ink3);">O acesso à plataforma pressupõe aceitação integral destes termos. Em caso de dúvida, contactar o administrador antes de qualquer partilha.</p>
+          </div>
+        </div>
+
+        <!-- LIMITAÇÃO DE RESPONSABILIDADE -->
+        <div class="card" style="border-left:4px solid var(--red);">
+          <div class="card-hdr" style="background:linear-gradient(90deg, var(--red-l) 0%, transparent 100%);">
+            <div class="card-title">⚖ Limitação de responsabilidade</div>
+          </div>
+          <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
+            <p style="margin-bottom:10px;">A plataforma é uma <strong style="color:var(--ink);">ferramenta de apoio à decisão</strong>, não substitui aconselhamento profissional especializado.</p>
+            <ul style="margin-left:20px;margin-bottom:var(--sp3);">
+              <li style="margin-bottom:6px;">Valores de <strong>ISV, transporte e legalização</strong> são <strong>estimativas</strong>. Confirmar sempre no Portal das Finanças, com o transportador escolhido e com o centro de inspecções oficial antes de qualquer compra.</li>
+              <li style="margin-bottom:6px;">Dados extraídos de anúncios (CO2, cilindrada, norma) podem conter erros ou estar incompletos. Validar com documentação original do veículo (certificado de matrícula / COC).</li>
+              <li style="margin-bottom:6px;">Preços de mercado em Portugal são referenciais baseados no StandVirtual e podem não reflectir o preço efectivo de venda.</li>
+              <li style="margin-bottom:6px;">A plataforma <strong>não garante lucro</strong> em nenhuma operação. Decisões de compra são exclusivamente da responsabilidade do utilizador.</li>
+              <li style="margin-bottom:6px;">Não se garante disponibilidade permanente dos serviços externos (Apify, Anthropic, Brave, Railway). Interrupções podem ocorrer.</li>
+            </ul>
+            <p style="background:var(--red-l);color:var(--red);padding:var(--sp3);border-radius:var(--r);border-left:3px solid var(--red);font-size:11px;">
+              <strong>Importante:</strong> O desenvolvedor da plataforma não assume responsabilidade por prejuízos financeiros, operacionais ou legais decorrentes do uso da informação aqui apresentada. Cada decisão de importação deve ser validada com profissionais qualificados (despachante, contabilista, advogado) quando apropriado.
+            </p>
+          </div>
+        </div>
+
+        <!-- Como funciona -->
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">⚙ Como funciona</div></div>
+          <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
+            <ol style="margin-left:20px;">
+              <li style="margin-bottom:10px;"><strong style="color:var(--accent);">Pesquisa</strong> — Cola URLs de pesquisa do AutoScout24 e/ou Mobile.de. O sistema usa o Apify para extrair os anúncios automaticamente.</li>
+              <li style="margin-bottom:10px;"><strong style="color:var(--accent);">Mercado PT</strong> — Cola URL de pesquisa do StandVirtual para estabelecer o preço médio de mercado em Portugal.</li>
+              <li style="margin-bottom:10px;"><strong style="color:var(--accent);">Processamento IA</strong> — Claude normaliza os dados (combustível, CO2, cilindrada, IVA dedutível) e calcula score de oportunidade de 1-10.</li>
+              <li style="margin-bottom:10px;"><strong style="color:var(--accent);">Resultados</strong> — Cada carro mostra custo total em Portugal (preço + transporte + ISV + legalização) e margem líquida esperada contra o mercado.</li>
+              <li><strong style="color:var(--accent);">Monitorização contínua</strong> — Activa sync numa análise para receberes notificações quando aparecem novos carros ou preços baixam.</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- Cálculo ISV -->
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">🧮 Cálculo do ISV</div></div>
+          <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
+            <p style="margin-bottom:12px;">O ISV é calculado segundo a <strong style="color:var(--ink);">Tabela A da AT para 2026</strong> e inclui:</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp3);margin-bottom:var(--sp3);">
+              <div style="background:var(--surface2);padding:var(--sp3);border-radius:var(--r);">
+                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Componente cilindrada</div>
+                <div style="font-size:11px;">Escalões até 1000cc, 1250cc e &gt;1250cc</div>
+              </div>
+              <div style="background:var(--surface2);padding:var(--sp3);border-radius:var(--r);">
+                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Componente ambiental</div>
+                <div style="font-size:11px;">CO2 por g/km, WLTP ou NEDC, gasolina ou gasóleo</div>
+              </div>
+              <div style="background:var(--surface2);padding:var(--sp3);border-radius:var(--r);">
+                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Reduções aplicáveis</div>
+                <div style="font-size:11px;">PHEV −75%, Híbrido Mild −40%, Eléctrico 0€</div>
+              </div>
+              <div style="background:var(--surface2);padding:var(--sp3);border-radius:var(--r);">
+                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Desconto por idade</div>
+                <div style="font-size:11px;">De 10% (1 ano) até 80% (&gt;10 anos)</div>
+              </div>
+            </div>
+            <p style="background:var(--amber-l);color:var(--amber);padding:var(--sp3);border-radius:var(--r);border-left:3px solid var(--amber);font-size:11px;">
+              ⚠ Todos os valores são <strong>estimativas</strong>. Confirma sempre o ISV oficial no <a href="https://www.portaldasfinancas.gov.pt/" target="_blank" style="color:var(--amber);font-weight:600;">Portal das Finanças</a> antes de qualquer compra. O botão "Validar no simulador AT" no modal de cada carro facilita esse passo.
+            </p>
+          </div>
+        </div>
+
+        <!-- Sistema de notificações -->
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">🔔 Sistema de notificações</div></div>
+          <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
+            <p style="margin-bottom:10px;">Activas sync numa análise guardada e recebes <strong>2 tipos de alerta</strong>:</p>
+            <div style="margin-bottom:var(--sp3);padding:var(--sp3);background:var(--green-l);border-radius:var(--r);border-left:3px solid var(--green);">
+              <div style="font-weight:600;color:var(--green);margin-bottom:4px;">🚗 Novo anúncio</div>
+              <div style="font-size:11px;color:var(--ink2);">Carro que não existia antes E tem score igual ou acima do mínimo definido por ti.</div>
+            </div>
+            <div style="padding:var(--sp3);background:var(--amber-l);border-radius:var(--r);border-left:3px solid var(--amber);">
+              <div style="font-weight:600;color:var(--amber);margin-bottom:4px;">📉 Baixou de preço</div>
+              <div style="font-size:11px;color:var(--ink2);">Carro conhecido que estava abaixo do score mínimo, o preço desceu, e agora o score passou o mínimo.</div>
+            </div>
+            <p style="margin-top:var(--sp3);font-size:11px;color:var(--ink3);">
+              O servidor verifica de hora a hora entre as 9h e as 19h, todos os dias. Notificações chegam ao telemóvel via ntfy.sh e ficam guardadas 7 dias no histórico.
+            </p>
+          </div>
+        </div>
+
+        <!-- Privacidade -->
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">🔒 Privacidade e dados</div></div>
+          <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
+            <p style="margin-bottom:10px;"><strong style="color:var(--ink);">Onde ficam os teus dados:</strong></p>
+            <ul style="margin-left:20px;margin-bottom:var(--sp3);">
+              <li style="margin-bottom:4px;"><strong>API Keys</strong> — apenas no localStorage do teu browser.</li>
+              <li style="margin-bottom:4px;"><strong>Análises completas com dados dos carros</strong> — apenas no localStorage do teu browser.</li>
+              <li style="margin-bottom:4px;"><strong>Metadados</strong> (nome, data, URLs de pesquisa, config de sync) — enviados ao servidor Railway quando guardas ou activas sync.</li>
+              <li style="margin-bottom:4px;"><strong>Notificações</strong> — guardadas 7 dias no servidor Railway e partilhadas entre os teus dispositivos.</li>
+            </ul>
+            <p style="margin-bottom:10px;"><strong style="color:var(--ink);">Serviços externos:</strong></p>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp2);font-size:11px;">
+              <div style="background:var(--surface2);padding:var(--sp2);border-radius:var(--r);text-align:center;"><strong>Anthropic</strong><br><span style="color:var(--ink3);">IA</span></div>
+              <div style="background:var(--surface2);padding:var(--sp2);border-radius:var(--r);text-align:center;"><strong>Apify</strong><br><span style="color:var(--ink3);">Scraping</span></div>
+              <div style="background:var(--surface2);padding:var(--sp2);border-radius:var(--r);text-align:center;"><strong>Brave</strong><br><span style="color:var(--ink3);">Search</span></div>
+              <div style="background:var(--surface2);padding:var(--sp2);border-radius:var(--r);text-align:center;"><strong>ntfy.sh</strong><br><span style="color:var(--ink3);">Push</span></div>
+              <div style="background:var(--surface2);padding:var(--sp2);border-radius:var(--r);text-align:center;"><strong>Railway</strong><br><span style="color:var(--ink3);">Sync</span></div>
+              <div style="background:var(--surface2);padding:var(--sp2);border-radius:var(--r);text-align:center;"><strong>GitHub</strong><br><span style="color:var(--ink3);">Hosting</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Custos -->
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">💰 Custos das APIs</div></div>
+          <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
+            <p style="margin-bottom:10px;">Valores aproximados por 100 anúncios processados:</p>
+            <div style="display:grid;grid-template-columns:1fr;gap:var(--sp2);margin-bottom:var(--sp3);">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:var(--sp2) var(--sp3);background:var(--surface2);border-radius:var(--r);">
+                <span><strong>Anthropic</strong> <span style="color:var(--ink3);font-size:11px;">(Claude Sonnet 4.5)</span></span>
+                <span style="font-family:var(--syne);font-weight:700;color:var(--accent);">≈ $1.50</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:var(--sp2) var(--sp3);background:var(--surface2);border-radius:var(--r);">
+                <span><strong>Apify</strong> <span style="color:var(--ink3);font-size:11px;">(por actor AS24/MDE/SV)</span></span>
+                <span style="font-family:var(--syne);font-weight:700;color:var(--accent);">≈ $0.30</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:var(--sp2) var(--sp3);background:var(--surface2);border-radius:var(--r);">
+                <span><strong>Brave Search</strong> <span style="color:var(--ink3);font-size:11px;">(até 2k queries/mês)</span></span>
+                <span style="font-family:var(--syne);font-weight:700;color:var(--green);">Grátis</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:var(--sp2) var(--sp3);background:var(--surface2);border-radius:var(--r);">
+                <span><strong>Railway</strong> <span style="color:var(--ink3);font-size:11px;">(servidor de sync)</span></span>
+                <span style="font-family:var(--syne);font-weight:700;color:var(--green);">Grátis (plano hobby)</span>
+              </div>
+            </div>
+            <p style="font-size:11px;color:var(--ink3);">A plataforma apresenta sempre a estimativa de custo antes de iniciar o processamento.</p>
+          </div>
+        </div>
+
+        <!-- Changelog -->
         <div class="card">
           <div class="card-hdr"><div class="card-title">📋 Changelog</div></div>
           <div class="card-body" style="font-size:12px;line-height:1.7;color:var(--ink2);">
-            <div style="margin-bottom:14px;">
-              <div style="display:flex;gap:10px;align-items:center;margin-bottom:4px;">
-                <strong style="color:var(--accent);">v0.1.5</strong>
-                <span style="font-size:10px;color:var(--ink3);">24 Abr 2026</span>
+            <div style="margin-bottom:var(--sp4);">
+              <div style="display:flex;gap:var(--sp2);align-items:center;margin-bottom:var(--sp2);">
+                <strong style="color:var(--accent);font-family:var(--syne);">v0.1.5</strong>
+                <span style="font-size:10px;color:var(--ink3);">Abril 2026</span>
+                <span style="font-size:9px;background:var(--green-l);color:var(--green);padding:2px 8px;border-radius:var(--r-pill);font-weight:700;">ACTUAL</span>
               </div>
               <ul style="margin-left:20px;font-size:11px;">
-                <li>Fase 3: Rate limiting no processamento, página Sobre, página de testes ISV</li>
-                <li>Fase 2: Nome auto-gerado, notas por carro, filtros avançados, comparação lado-a-lado, acções em lote</li>
-                <li>Fase 1: Toast notifications, auto-save, estimativa de custo, validação de keys, backup automático</li>
-                <li>Adicionadas notificações push (novo anúncio, baixa de preço)</li>
-                <li>Sync config nos cards de análise (importa do PC, activa no telemóvel)</li>
-                <li>Tema Azul Fintech (accent #1B3A6B, dourado #D4A017)</li>
+                <li>Banner beta persistente no topo e secções de uso: aviso beta, confidencialidade, limitação de responsabilidade</li>
+                <li>Melhorias de ISV: audit trail passo-a-passo, intervalos de confiança, validação com AT</li>
+                <li>Tabela de referência por marca/modelo e alertas de sanidade (margem suspeita, CO2 fora de range)</li>
+                <li>Página Sobre completa, validação de API keys, backup automático das análises</li>
+                <li>Filtros nos resultados (score, margem, confiança, ISV validado)</li>
+                <li>Comparação lado-a-lado de até 3 carros, notas pessoais por carro</li>
+                <li>Nome de análise auto-gerado, acções em lote, dark mode</li>
+                <li>Toast notifications, auto-save durante processamento, estimativa de custo</li>
+                <li>Ícones para "Adicionar ao ecrã inicial" no telemóvel</li>
+                <li>Notificações push: novo anúncio + baixa de preço (até o score passar o mínimo)</li>
+                <li>Sync config nos cards das análises guardadas</li>
+                <li>Tema Azul Fintech com dourado e sistema de design uniforme</li>
               </ul>
             </div>
           </div>
         </div>
 
+        <!-- Info técnica -->
         <div class="card">
-          <div class="card-hdr"><div class="card-title">⚙ Info técnica</div></div>
+          <div class="card-hdr"><div class="card-title">ⓘ Informação técnica</div></div>
           <div class="card-body" style="font-size:12px;color:var(--ink2);">
-            <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 16px;">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 20px;">
               <strong>Versão:</strong><span>v0.1.5</span>
-              <strong>Servidor:</strong><span id="sobre-server-status">a verificar...</span>
-              <strong>Notificações:</strong><span id="sobre-notif-count">—</span>
-              <strong>Análises guardadas:</strong><span id="sobre-analyses-count">—</span>
-              <strong>Favoritos:</strong><span id="sobre-favs-count">—</span>
+              <strong>Host:</strong><span>GitHub Pages</span>
+              <strong>Servidor:</strong><span id="sobre-server-status" style="font-family:var(--mono);">a verificar...</span>
+              <strong>Actores Apify:</strong><span style="font-family:var(--mono);font-size:11px;">ivanvs/autoscout-scraper · ivanvs/mobile-de-scraper · dadhalfdev/standvirtual-scraper</span>
+              <strong>Modelo IA:</strong><span style="font-family:var(--mono);font-size:11px;">claude-sonnet-4-5</span>
+              <strong>Tabela ISV:</strong><span>AT 2026</span>
+              <strong>Cron sync:</strong><span>Todos os dias · 9h às 19h</span>
             </div>
           </div>
         </div>
 
-        <div style="text-align:center;font-size:10px;color:var(--ink3);margin-top:20px;">
-          AutoImport · Plataforma de Importação de Automóveis · ISV AT 2026
+        <div style="text-align:center;font-size:10px;color:var(--ink3);margin-top:var(--sp5);padding-top:var(--sp4);border-top:0.5px solid var(--border);">
+          AutoImport · v0.1.5 · Plataforma de Importação de Automóveis · ISV AT 2026
         </div>
       </div>
     </div>
-      </div>
-    </div>
-
   </div>
 </div>
 </div>
@@ -4070,28 +4267,41 @@ function eliminarBaixaPontuacao(){
 }
 
 async function renderSobre(){
-  document.getElementById('sobre-analyses-count').textContent = analyses.length + ' análises';
-  document.getElementById('sobre-favs-count').textContent = favs.length + ' favoritos';
-  document.getElementById('sobre-notif-count').textContent = notificacoes.length + ' (' + notificacoes.filter(n => !n.read).length + ' por ler)';
+  // Update stats
+  const analysesEl = document.getElementById('sobre-stat-analyses');
+  const favsEl = document.getElementById('sobre-stat-favs');
+  const notifsEl = document.getElementById('sobre-stat-notifs');
+  const serverStatEl = document.getElementById('sobre-stat-server');
+  if(analysesEl) analysesEl.textContent = analyses.length;
+  if(favsEl) favsEl.textContent = favs.length;
+  if(notifsEl) notifsEl.textContent = notificacoes.filter(n => !n.read).length + '/' + notificacoes.length;
 
   // Check server
-  const serverEl = document.getElementById('sobre-server-status');
   const url = getServerUrl();
+  const serverEl = document.getElementById('sobre-server-status');
+
   if(!url){
-    serverEl.innerHTML = '<span style="color:var(--ink3);">Não configurado</span>';
+    if(serverEl) serverEl.innerHTML = '<span style="color:var(--ink3);">Não configurado</span>';
+    if(serverStatEl){ serverStatEl.textContent = 'Off'; serverStatEl.style.color = 'var(--ink3)'; }
     return;
   }
-  serverEl.textContent = 'a verificar...';
+
+  if(serverEl) serverEl.textContent = 'a verificar...';
+  if(serverStatEl){ serverStatEl.textContent = '...'; serverStatEl.style.color = 'var(--ink3)'; }
+
   try{
     const resp = await fetch(url + '/health', {method:'GET'});
     if(resp.ok){
       const data = await resp.json();
-      serverEl.innerHTML = '<span style="color:var(--green);">● online</span> <span style="font-size:10px;color:var(--ink3);">· ' + (data.analyses||0) + ' análises sync</span>';
+      if(serverEl) serverEl.innerHTML = '<span style="color:var(--green);">● online</span> <span style="font-size:10px;color:var(--ink3);">· ' + (data.analyses||0) + ' sync</span>';
+      if(serverStatEl){ serverStatEl.textContent = 'Online'; serverStatEl.style.color = 'var(--green)'; }
     } else {
-      serverEl.innerHTML = '<span style="color:var(--amber);">● respondeu ' + resp.status + '</span>';
+      if(serverEl) serverEl.innerHTML = '<span style="color:var(--amber);">● ' + resp.status + '</span>';
+      if(serverStatEl){ serverStatEl.textContent = 'Erro'; serverStatEl.style.color = 'var(--amber)'; }
     }
   } catch(e){
-    serverEl.innerHTML = '<span style="color:var(--red);">● offline</span>';
+    if(serverEl) serverEl.innerHTML = '<span style="color:var(--red);">● offline</span>';
+    if(serverStatEl){ serverStatEl.textContent = 'Offline'; serverStatEl.style.color = 'var(--red)'; }
   }
 }
 
@@ -4495,6 +4705,24 @@ function saveOfficialISV(){
   renderSanityWarnings(car);
   const statusEl = document.getElementById('isv-official-status');
   if(statusEl) statusEl.textContent = '✓ Guardado';
+}
+
+// ── BETA BANNER ──────────────────────────────
+(function initBetaBanner(){
+  const dismissed = localStorage.getItem('ai_beta_dismissed');
+  const dismissedAt = dismissed ? parseInt(dismissed) : 0;
+  const sevenDays = 7 * 24 * 60 * 60 * 1000;
+  const shouldShow = !dismissed || (Date.now() - dismissedAt > sevenDays);
+  const banner = document.getElementById('beta-banner');
+  if(banner && shouldShow){
+    banner.style.display = 'flex';
+  }
+})();
+
+function dismissBetaBanner(){
+  const banner = document.getElementById('beta-banner');
+  if(banner) banner.style.display = 'none';
+  localStorage.setItem('ai_beta_dismissed', Date.now().toString());
 }
 
 </script>
