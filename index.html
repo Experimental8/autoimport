@@ -532,7 +532,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
       <div style="display:flex;justify-content:flex-end;gap:var(--sp2);margin-bottom:var(--sp4);flex-wrap:wrap;">
         <button class="btn btn-ghost btn-sm" onclick="uploadBackupToServer()" title="Envia os teus dados para o servidor. Outros dispositivos ligados ao mesmo servidor vão receber uma notificação.">☁↑ Enviar backup</button>
         <button class="btn btn-ghost btn-sm" onclick="checkAndDownloadBackup()" title="Verifica e descarrega o backup mais recente do servidor">☁↓ Sincronizar do servidor</button>
-        <button class="btn btn-ghost btn-sm" onclick="exportarDados()" title="Exporta todas as análises e favoritos para partilhar por ficheiro">↑ Exportar ficheiro</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportarDados(false)" title="Exporta análises e favoritos (sem API keys)">↑ Exportar dados</button>
         <button class="btn btn-ghost btn-sm" onclick="document.getElementById('import-input').click()" title="Importa dados de um ficheiro JSON">↓ Importar ficheiro</button>
         <input type="file" id="import-input" accept=".json" style="display:none;" onchange="importarDados(this)">
       </div>
@@ -918,6 +918,20 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
           </div>
           <div id="server-url-status" style="margin-top:6px;font-size:11px;"></div>
           <div style="margin-top:4px;font-size:11px;color:var(--ink3);">URL do servidor Railway para sync automático e notificações.</div>
+        </div>
+        <div class="card-body" style="padding-top:0;border-top:1px solid var(--border);margin-top:var(--sp2);padding-top:var(--sp3);">
+          <div style="font-size:11px;font-weight:600;margin-bottom:8px;">📤 Transferir keys para outro dispositivo</div>
+          <div style="font-size:11px;color:var(--ink3);margin-bottom:10px;line-height:1.5;">
+            Exporta as 4 configurações (Anthropic, Apify, Brave, URL do servidor) num ficheiro encriptável, para configurares rapidamente outro dispositivo (telemóvel, PC do colega, etc.).
+          </div>
+          <div style="display:flex;gap:var(--sp2);flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" onclick="exportarDadosComKeys()" title="Exporta análises + favoritos + as 4 keys/URL. Trata o ficheiro como password.">🔑↑ Exportar com keys</button>
+          </div>
+          <div style="margin-top:8px;padding:8px 10px;background:var(--amber-l);border-radius:var(--r);font-size:11px;color:var(--amber);line-height:1.4;">
+            ⚠ <strong>Aviso de segurança</strong>: o ficheiro contém as keys em texto puro.
+            Envia <strong>apenas</strong> por canal seguro: Bitwarden Send, 1Password, Signal, iMessage.
+            <strong>Nunca</strong> por email, WhatsApp ou cloud sync público.
+          </div>
         </div>
         <div class="card-body" style="padding-top:0;">
           <div style="margin-top:var(--sp2);font-size:11px;color:var(--ink3);line-height:1.6;">
@@ -3331,9 +3345,24 @@ function renderFavoritos(){
   const grid=document.getElementById('fav-grid');
   grid.classList.remove('hidden');
   grid.innerHTML='';
-  // Build cards from favs directly (not calcRows)
+  // Build cards from favs — recalcula com config actual de transporte/legalização
   favs.forEach((r,i)=>{
-    const card = buildFavCard(r, i);
+    // Strip cached calc fields and recalc with current cfg
+    const recalc = {...r};
+    delete recalc.transp;
+    delete recalc.isv;
+    delete recalc.legal;
+    delete recalc.custo;
+    delete recalc.svRef;
+    delete recalc.svSource;
+    delete recalc.svMatchCount;
+    delete recalc.mb;
+    delete recalc.ivaM;
+    delete recalc.ml;
+    delete recalc.mp;
+    delete recalc.score;
+    Object.assign(recalc, calcMarg(recalc));
+    const card = buildFavCard(recalc, i);
     grid.appendChild(card);
   });
 }
@@ -3454,7 +3483,9 @@ function saveAnalysis(){
     cars:calcRows, eliminados:eliminatedRows, market:svMarket, norma:document.getElementById('ov-norma')?.value||'WLTP',
     searchUrls,
     syncEnabled: false,
-    minScore: 7,
+    minScore: 30,
+    maxPrice: 0,
+    svMarket: {...svMarket},
     ntfyChannel: '',
     svRows: files.sv?.rows||[],
     svSelected: svSelectedRows,
@@ -3477,7 +3508,7 @@ function saveAnalysis(){
         id: entry.id, name: entry.name, date: entry.date,
         count: entry.count, avgScore: entry.avgScore, avgMarg: entry.avgMarg,
         searchUrls: entry.searchUrls || [],
-        syncEnabled: entry.syncEnabled, minScore: entry.minScore,
+        syncEnabled: entry.syncEnabled, maxPrice: entry.maxPrice,
         ntfyChannel: entry.ntfyChannel,
       }),
     }).catch(() => {/* silent */});
@@ -3523,11 +3554,11 @@ function renderHistorico(){
         <div class="ac-stat"><div class="ac-stat-val">${avgScore}</div><div class="ac-stat-label">Score Médio</div></div>
       </div>
       ${nc > 0 ? `<div style="margin-top:var(--sp2);display:inline-flex;align-items:center;gap:5px;background:#FEE2E2;color:#B91C1C;font-size:10px;font-weight:600;padding:3px 8px;border-radius:var(--r-pill);">🔔 ${nc} novo${nc>1?'s':''}</div>` : ''}
-      ${serverOk ? `
       <div style="margin-top:var(--sp3);padding-top:var(--sp3);border-top:0.5px solid var(--border2);" onclick="event.stopPropagation()">
+        ${!serverOk ? `<div style="font-size:10px;color:var(--amber);background:var(--amber-l);padding:6px 8px;border-radius:var(--r);margin-bottom:var(--sp2);">⚠ Configura URL do servidor nas Configurações para usar sync</div>` : ''}
         <div style="display:flex;align-items:center;gap:var(--sp2);margin-bottom:var(--sp2);">
-          <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;flex:1;">
-            <input type="checkbox" id="sync-check-${i}" ${syncOn?'checked':''} onchange="toggleSyncAnalysis(${i},this.checked)" style="accent-color:var(--accent);">
+          <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:${serverOk?'pointer':'not-allowed'};flex:1;opacity:${serverOk?'1':'0.6'};">
+            <input type="checkbox" id="sync-check-${i}" ${syncOn?'checked':''} ${serverOk?'':'disabled'} onchange="toggleSyncAnalysis(${i},this.checked)" style="accent-color:var(--accent);">
             <span style="font-weight:500;">Sync automático</span>
           </label>
           ${syncOn ? '<span style="font-size:10px;color:var(--green);">● activo</span>' : '<span style="font-size:10px;color:var(--ink3);">○ inactivo</span>'}
@@ -3542,8 +3573,11 @@ function renderHistorico(){
               >${(a.searchUrls||[]).map(u=>u.url).join('\n')}</textarea>
             </div>
             <div>
-              <div style="font-size:10px;color:var(--ink3);margin-bottom:3px;">Score mín.</div>
-              <input type="number" id="sync-score-${i}" value="${a.minScore||7}" min="1" max="10" onclick="event.stopPropagation()"
+              <div style="font-size:10px;color:var(--ink3);margin-bottom:3px;" title="Score 0-100 baseado em margem%. 30 = boa oportunidade, 50+ = excelente.">Score mín. (0-100)</div>
+              <input type="number" id="sync-score-${i}" value="${a.minScore||30}" min="0" max="100" step="5" onclick="event.stopPropagation()"
+                style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);font-size:12px;margin-bottom:8px;">
+              <div style="font-size:10px;color:var(--ink3);margin-bottom:3px;" title="Hard limit: ignora qualquer anúncio acima deste preço, mesmo que score seja alto. Deixa em branco para sem limite.">Preço máx. (€) <span style="color:var(--ink3);">opcional</span></div>
+              <input type="number" id="sync-maxprice-${i}" value="${a.maxPrice||''}" min="0" step="1000" placeholder="sem limite" onclick="event.stopPropagation()"
                 style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r);font-family:var(--mono);font-size:12px;color:var(--ink);">
             </div>
           </div>
@@ -3553,9 +3587,9 @@ function renderHistorico(){
               style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r);font-family:var(--mono);font-size:11px;color:var(--ink);"
               placeholder="o_teu_canal_ntfy">
           </div>
-          <button class="btn btn-primary btn-sm" onclick="saveSyncConfig(event,${i})" style="width:100%;">Guardar sync</button>
+          <button class="btn btn-primary btn-sm" onclick="saveSyncConfig(event,${i})" style="width:100%;" ${serverOk?'':'disabled'}>Guardar sync</button>
         </div>
-      </div>` : ''}`;
+      </div>`;
     div.dataset.idx = i;
     div.addEventListener('click', function(e) {
       if(e.target.closest('[contenteditable]') || e.target.closest('.ac-del')) return;
@@ -3570,9 +3604,28 @@ function loadAnalysis(e, i){
   e.stopPropagation();
   const a = analyses[i];
   if(!a||!a.cars) return;
-  // Restore analysis state
+  // Restore analysis state — recalcula com config actual (transporte, legalização, etc)
   processedOrigin = a.cars;
-  calcRows = a.cars.map(r=>({...r}));
+  // Aplicar calcMarg novo para recalcular com cfg actual
+  calcRows = a.cars.map(r => {
+    const base = {...r};
+    // Strip old calculated fields so they get recalculated with current cfg
+    delete base.transp;
+    delete base.isv;
+    delete base.legal;
+    delete base.custo;
+    delete base.svRef;
+    delete base.svSource;
+    delete base.svMatchCount;
+    delete base.mb;
+    delete base.ivaM;
+    delete base.ml;
+    delete base.mp;
+    delete base.score;
+    return {...base, ...calcMarg(base)};
+  });
+  // Sync processedOrigin com calcRows recalculados (para evitar discrepância)
+  processedOrigin = calcRows.map(r => ({...r}));
   eliminatedRows = a.eliminados || [];
   svMarket = a.market || {};
   // Restore norma override
@@ -3690,6 +3743,18 @@ function toggleISVTable(){
 
 function updateCfg(){
   document.querySelectorAll('[data-t]').forEach(el=>cfg.transport[el.dataset.t]=parseFloat(el.value)||0);
+  // Trigger re-render of currently visible views with new transport config
+  if(typeof calcRows !== 'undefined' && calcRows.length){
+    calcRows = calcRows.map(r => {
+      const base = {...r};
+      delete base.transp; delete base.isv; delete base.legal;
+      delete base.custo; delete base.svRef; delete base.mb;
+      delete base.ivaM; delete base.ml; delete base.mp; delete base.score;
+      return {...base, ...calcMarg(base)};
+    });
+  }
+  if(document.getElementById('view-favoritos')?.classList.contains('active')) renderFavoritos();
+  if(document.getElementById('view-analise')?.classList.contains('active') && typeof renderResults === 'function') renderResults();
   document.querySelectorAll('[data-l]').forEach(el=>cfg.legal[el.dataset.l]=parseFloat(el.value)||0);
   const tot=getLegalTotal();
   const el=document.getElementById('cfg-legal-total');
@@ -3971,21 +4036,68 @@ function toggleEliminados(){
 // ══════════════════════════════════════════════
 // EXPORTAR / IMPORTAR DADOS
 // ══════════════════════════════════════════════
-function exportarDados(){
+function exportarDados(includeKeys = false){
   const dados = {
-    versao: '1.0',
+    versao: includeKeys ? '1.1-keys' : '1.0',
     exportadoEm: new Date().toISOString(),
     analyses,
     favs,
     cfg
   };
+
+  // Incluir keys e URL do servidor se pedido
+  if(includeKeys){
+    dados.keys = {
+      anthropic: localStorage.getItem('ai_api_key') || '',
+      apify: localStorage.getItem('ai_apify_key') || '',
+      brave: localStorage.getItem('ai_brave_key') || '',
+      serverUrl: localStorage.getItem('ai_server_url') || ''
+    };
+  }
+
   const json = JSON.stringify(dados, null, 2);
   const blob = new Blob([json], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'autoimport_dados_' + new Date().toLocaleDateString('pt-PT').split('/').join('-') + '.json';
+  const suffix = includeKeys ? '_completo' : '';
+  a.download = 'autoimport_dados' + suffix + '_' + new Date().toLocaleDateString('pt-PT').split('/').join('-') + '.json';
   a.click();
   URL.revokeObjectURL(a.href);
+
+  if(includeKeys){
+    showToast('⚠ Export com keys', 'Trata o ficheiro como password — envia só por canal seguro', 'warn');
+  } else {
+    showToast('✓ Export simples', 'Apenas dados (sem API keys)', 'success');
+  }
+}
+
+function exportarDadosComKeys(){
+  // Verificar se há keys para exportar
+  const hasKeys = localStorage.getItem('ai_api_key') ||
+                  localStorage.getItem('ai_apify_key') ||
+                  localStorage.getItem('ai_brave_key');
+  if(!hasKeys){
+    showToast('Sem keys', 'Não há API keys configuradas para exportar', 'warn');
+    return;
+  }
+
+  const ok = confirm(
+    '⚠ EXPORT COM KEYS — Aviso de segurança\n\n' +
+    'O ficheiro vai conter as tuas API keys da Anthropic, Apify e Brave em texto puro.\n\n' +
+    'Quem aceder ao ficheiro pode usar as tuas keys e gastar dinheiro em teu nome.\n\n' +
+    'Envia apenas por canal seguro:\n' +
+    '• Bitwarden Send\n' +
+    '• 1Password Share\n' +
+    '• Signal\n' +
+    '• iMessage (entre Apple)\n\n' +
+    'NUNCA envies por:\n' +
+    '• Email não encriptado\n' +
+    '• WhatsApp (servidores de terceiros)\n' +
+    '• Cloud public sync (Drive, Dropbox sem encriptação)\n\n' +
+    'Continuar?'
+  );
+  if(!ok) return;
+  exportarDados(true);
 }
 
 function importarDados(input){
@@ -4000,8 +4112,19 @@ function importarDados(input){
       // Contar o que vai ser importado
       const nAnalises = (dados.analyses||[]).length;
       const nFavs = (dados.favs||[]).length;
+      const hasKeys = !!dados.keys;
+      const keysList = hasKeys ? [
+        dados.keys.anthropic ? 'Anthropic' : null,
+        dados.keys.apify ? 'Apify' : null,
+        dados.keys.brave ? 'Brave' : null,
+        dados.keys.serverUrl ? 'URL do servidor' : null
+      ].filter(Boolean) : [];
 
-      const msg = `Importar ${nAnalises} análise(s) e ${nFavs} favorito(s)?
+      const keysInfo = hasKeys && keysList.length
+        ? '\n\n🔑 Keys incluídas: ' + keysList.join(', ')
+        : '';
+
+      const msg = `Importar ${nAnalises} análise(s) e ${nFavs} favorito(s)?${keysInfo}
 
 Escolhe o modo:
 • OK = Juntar aos dados existentes
@@ -4020,6 +4143,30 @@ Escolhe o modo:
       // Guardar
       localStorage.setItem('ai_analyses', JSON.stringify(analyses));
       localStorage.setItem('ai_favs', JSON.stringify(favs));
+
+      // Importar API keys se vierem no ficheiro
+      if(dados.keys){
+        let importedKeys = [];
+        if(dados.keys.anthropic){
+          localStorage.setItem('ai_api_key', dados.keys.anthropic);
+          importedKeys.push('Anthropic');
+        }
+        if(dados.keys.apify){
+          localStorage.setItem('ai_apify_key', dados.keys.apify);
+          importedKeys.push('Apify');
+        }
+        if(dados.keys.brave){
+          localStorage.setItem('ai_brave_key', dados.keys.brave);
+          importedKeys.push('Brave');
+        }
+        if(dados.keys.serverUrl){
+          localStorage.setItem('ai_server_url', dados.keys.serverUrl);
+          importedKeys.push('Servidor');
+        }
+        if(importedKeys.length){
+          showToast('🔑 Keys importadas', importedKeys.join(', '), 'success');
+        }
+      }
 
       // Importar config se não houver dados locais
       if(dados.cfg && !localStorage.getItem('ai_cfg2')){
@@ -4042,7 +4189,7 @@ Escolhe o modo:
             body: JSON.stringify({
               id: a.id, name: a.name,
               syncEnabled: a.syncEnabled,
-              minScore: a.minScore || 7,
+              maxPrice: a.maxPrice || 0,
               ntfyChannel: a.ntfyChannel || '',
               searchUrls: a.searchUrls || [],
             }),
@@ -4197,7 +4344,7 @@ async function checkAndDownloadBackup(){
         body: JSON.stringify({
           id: a.id, name: a.name,
           syncEnabled: a.syncEnabled,
-          minScore: a.minScore || 7,
+          maxPrice: a.maxPrice || 0,
           ntfyChannel: a.ntfyChannel || '',
           searchUrls: a.searchUrls || [],
         }),
@@ -4823,9 +4970,11 @@ function toggleSyncAnalysis(i, enabled){
         id: a.id,
         name: a.name,
         syncEnabled: a.syncEnabled,
-        minScore: a.minScore || 7,
+        maxPrice: a.maxPrice || 0,
+        minScore: a.minScore || 30,
         ntfyChannel: a.ntfyChannel || '',
         searchUrls: a.searchUrls || [],
+        cachedRef: buildCachedRef(a)
       }),
     }).then(resp => {
       if(resp.ok){
@@ -4865,13 +5014,31 @@ function toggleSyncAnalysis(i, enabled){
   }
 }
 
+
+// Build cached reference for server-side score calculation
+function buildCachedRef(analysis){
+  // Use saved svMarket from analysis
+  const market = analysis.svMarket || svMarket || {};
+  if(!market.preco_medio) return null;
+  return {
+    priceMedian: market.preco_medio,
+    priceP25: market.preco_min || null,
+    priceP75: market.preco_max || null,
+    countMatched: market.total || null,
+    timestamp: Date.now()
+  };
+}
+
 async function saveSyncConfig(e, i){
   e.stopPropagation();
   const a = analyses[i];
   if(!a) return;
 
   const urlsRaw = document.getElementById('sync-urls-' + i)?.value || '';
-  const minScore = parseInt(document.getElementById('sync-score-' + i)?.value) || 7;
+  const maxPriceRaw = document.getElementById('sync-maxprice-' + i)?.value;
+  const maxPrice = maxPriceRaw ? parseInt(maxPriceRaw) : 0;
+  const minScore = parseInt(document.getElementById('sync-score-' + i)?.value) || 30;
+  
   const ntfyChannel = document.getElementById('sync-ntfy-' + i)?.value?.trim() || '';
   const syncEnabled = document.getElementById('sync-check-' + i)?.checked || false;
 
@@ -4885,9 +5052,10 @@ async function saveSyncConfig(e, i){
 
   // Detect what changed
   const urlsChanged = JSON.stringify(a.searchUrls||[]) !== JSON.stringify(searchUrls);
-  const scoreChanged = (a.minScore||7) !== minScore;
+  const priceChanged = (a.maxPrice||0) !== maxPrice;
+  const scoreChanged = (a.minScore||30) !== minScore;
   const channelChanged = (a.ntfyChannel||'') !== ntfyChannel;
-  const anyChange = urlsChanged || scoreChanged || channelChanged;
+  const anyChange = urlsChanged || priceChanged || scoreChanged || channelChanged;
 
   // Validate
   if(syncEnabled){
@@ -4901,6 +5069,7 @@ async function saveSyncConfig(e, i){
   }
 
   a.syncEnabled = syncEnabled;
+  a.maxPrice = maxPrice;
   a.minScore = minScore;
   a.ntfyChannel = ntfyChannel;
   a.searchUrls = searchUrls;
@@ -4917,7 +5086,8 @@ async function saveSyncConfig(e, i){
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({
           id: a.id, name: a.name,
-          syncEnabled, minScore, ntfyChannel, searchUrls,
+          syncEnabled, maxPrice, minScore, ntfyChannel, searchUrls,
+          cachedRef: buildCachedRef(a)
         }),
       });
       serverOk = resp.ok;
@@ -4927,7 +5097,8 @@ async function saveSyncConfig(e, i){
   // Feedback do guardar
   const parts = [];
   if(urlsChanged) parts.push(`${searchUrls.length} URLs`);
-  if(scoreChanged) parts.push(`score ${minScore}`);
+  if(scoreChanged) parts.push(`score mín ${minScore}`);
+  if(priceChanged) parts.push(maxPrice ? `máx ${maxPrice.toLocaleString('pt-PT')}€` : 'sem limite preço');
   if(channelChanged) parts.push('canal ntfy');
   const summary = parts.length ? 'Actualizado: ' + parts.join(', ') : 'Configuração confirmada';
 
@@ -4943,7 +5114,8 @@ async function saveSyncConfig(e, i){
     showToast('⏳ A enviar notificação...', 'Canal: ' + ntfyChannel, 'info');
     const sent = await sendSyncConfigNotification(ntfyChannel, a.name, {
       urls: searchUrls.length,
-      score: minScore,
+      minScore: minScore,
+      maxPrice: maxPrice,
       changes: anyChange,
       syncEnabled
     });
@@ -4969,7 +5141,9 @@ async function sendSyncConfigNotification(channel, analysisName, info){
   }
   try{
     const statusTxt = info.syncEnabled ? '✓ Sync ACTIVO' : '○ Sync inactivo';
-    const body = `${statusTxt}\n${info.urls} URL${info.urls!==1?'s':''} · Score mín ${info.score}\nSync: 08h, 12h, 14h30, 17h30 (diário)`;
+    const scoreTxt = `Score mín ${info.minScore}`;
+    const priceTxt = info.maxPrice ? ` · Preço máx ${info.maxPrice.toLocaleString('pt-PT')}€` : '';
+    const body = `${statusTxt}\n${info.urls} URL${info.urls!==1?'s':''} · ${scoreTxt}${priceTxt}\nSync: 08h, 12h, 14h30, 17h30 (diário)`;
     const resp = await fetch(serverUrl + '/notify', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
