@@ -30,7 +30,7 @@
 }
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:13px;line-height:1.5;min-height:100vh;}
+body{background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:13px;line-height:1.5;min-height:100vh;overflow-x:hidden;}
 
 /* ── LAYOUT ── */
 .app{display:flex;min-height:100vh;}
@@ -204,7 +204,7 @@ td.editing input{width:100%;background:#fff;border:2px solid var(--accent);color
 /* ── SOURCE BADGES ── */
 .src-badges{position:absolute;bottom:var(--sp2);left:var(--sp2);display:flex;gap:var(--sp1);z-index:5;}
 .src-badge-pill{font-size:9px;font-weight:700;padding:2px var(--sp2);border-radius:var(--sp1);font-family:var(--mono);letter-spacing:.04em;}
-.src-as24{background:#f5f500;color:#1A1714;}
+.src-as24{background:#f5f500;color:#000;}
 .src-mde{background:#68298a;color:#fff;}
 .src-merged{background:var(--ink);color:#fff;}
 
@@ -286,6 +286,8 @@ td.editing input{width:100%;background:#fff;border:2px solid var(--accent);color
   .modal{max-height:100vh;border-radius:0;}
   .car-grid{grid-template-columns:1fr;}
   .analyses-grid{grid-template-columns:1fr;}
+  .btn{min-height:44px;}
+  .btn-sm{min-height:40px;padding-top:8px;padding-bottom:8px;}
 }
 .hamburger{display:none;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--border);background:none;cursor:pointer;border-radius:var(--r);font-size:16px;color:var(--ink2);}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150;}
@@ -343,7 +345,7 @@ body.dark input,body.dark select,body.dark textarea{background:var(--surface);co
 body.dark .alert-info{background:#0F2340;color:#B8CCE4;}
 body.dark .alert-warn{background:#2B1F0A;color:#E8B84B;}
 body.dark .alert-green{background:#0F2318;color:#5DCAA5;}
-body.dark .src-as24{background:#f5f500;color:#1A1714;}
+body.dark .src-as24{background:#f5f500;color:#000;}
 body.dark .src-mde{background:#8E3FB0;color:#fff;}
 body.dark th{background:var(--surface2);}
 body.dark .modal-overlay{background:rgba(0,0,0,.7);}
@@ -584,7 +586,7 @@ body.dark ::-webkit-scrollbar-thumb{background:var(--border);}
               <!-- AS24 URL -->
               <div style="margin-bottom:14px;">
                 <div style="font-size:12px;font-weight:600;margin-bottom:var(--sp2);display:flex;align-items:center;gap:var(--sp2);">
-                  <span style="background:#f5f500;color:#1A1714;font-size:10px;font-weight:700;padding:2px 7px;border-radius:2px;">AS24</span>
+                  <span style="background:#f5f500;color:#000;font-size:10px;font-weight:700;padding:2px 7px;border-radius:2px;">AS24</span>
                   AutoScout24
                 </div>
                 <div style="font-size:11px;color:var(--ink3);margin-bottom:var(--sp2);">
@@ -1407,15 +1409,27 @@ async function validateApiKey(provider){
 
 
 // ── FETCH WITH TIMEOUT ─────────────────────
-async function fetchWithTimeout(url, options = {}, timeoutMs = 60000){
+async function fetchWithTimeout(url, options = {}, timeoutMs = 60000, retries = 0){
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  // Backoff: 1s, 2s, 4s (depending on which retry we're on)
+  const backoffMs = (attemptsLeft) => attemptsLeft === 2 ? 1000 : attemptsLeft === 1 ? 2000 : 4000;
   try{
     const resp = await fetch(url, {...options, signal: controller.signal});
     clearTimeout(timeoutId);
+    // Retry on transient HTTP errors (rate limit / server issues)
+    if(retries > 0 && [429, 500, 502, 503, 504].includes(resp.status)){
+      await new Promise(r => setTimeout(r, backoffMs(retries)));
+      return fetchWithTimeout(url, options, timeoutMs, retries - 1);
+    }
     return resp;
   } catch(err){
     clearTimeout(timeoutId);
+    // Retry on timeout (AbortError) or network glitches (TypeError)
+    if(retries > 0 && (err.name === 'AbortError' || err.name === 'TypeError')){
+      await new Promise(r => setTimeout(r, backoffMs(retries)));
+      return fetchWithTimeout(url, options, timeoutMs, retries - 1);
+    }
     if(err.name === 'AbortError'){
       throw new Error(`Pedido expirou após ${Math.round(timeoutMs/1000)}s (${url.substring(0, 50)}...)`);
     }
@@ -2046,6 +2060,11 @@ async function startProcessing(){
     log('Match SV', `${matchedCount}/${processedOrigin.length} carros com preço de referência específico por modelo/ano`, 'ok');
   }
   calcRows=processedOrigin.map(r=>({...r,...calcMarg(r)}));
+  // Sugerir nome inteligente se utilizador ainda tem o default "Nova Análise"
+  const nameInput = document.getElementById('analysis-name');
+  if(nameInput && (nameInput.value === 'Nova Análise' || !nameInput.value.trim())){
+    nameInput.value = generateAnalysisName();
+  }
   saveCurrentSession();  // persist immediately after processing completes
   document.getElementById('ov-legal').value=getLegalTotal();
   document.getElementById('wf-step3').classList.add('hidden');
@@ -2208,7 +2227,7 @@ Responde APENAS com o array JSON.`;
       max_tokens:600,
       messages:[{role:'user',content:prompt}]
     })
-  }, 90000);
+  }, 90000, 2);
   if(!resp.ok)throw new Error(`API ${resp.status}`);
   const data=await resp.json();
   const text=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
@@ -2301,22 +2320,6 @@ function isSameCar(a, b){
 
 function normStr(s){ return (s||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,' ').trim(); }
 
-async function braveSearch(query){
-  try{
-    const serverUrl = getServerUrl();
-    const braveKey = getBraveKey();
-    if(!serverUrl || !braveKey) return '';
-    const resp = await fetch(serverUrl + '/brave-search', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({query, key: braveKey, count: 3})
-    });
-    if(!resp.ok) return '';
-    const data = await resp.json();
-    return (data.web?.results||[]).slice(0,3).map(r=>(r.title||'')+': '+(r.description||'')).join(' | ');
-  }catch(e){return '';}
-}
-
 async function braveSearchWithSource(query){
   try{
     const serverUrl = getServerUrl();
@@ -2379,7 +2382,7 @@ async function fillMissingData(cars){
     method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':getApiKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
     body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:300,messages:[{role:'user',content:prompt}]})
-  }, 90000);
+  }, 90000, 2);
   if(!resp.ok) throw new Error('API '+resp.status);
   const data = await resp.json();
   const text = data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
@@ -3865,13 +3868,6 @@ function renderDashboard(){
   el.innerHTML=''; el.appendChild(wrap);
 }
 
-function loadAnalysisAndReviewSV(e,i){
-  e.stopPropagation();
-  loadAnalysis(e,i);
-  // Open SV review after a short delay to let the view render
-  setTimeout(()=>abrirReverMercado(), 300);
-}
-
 function deleteAnalysisDash(e,i){
   e.stopPropagation();
   if(!confirm(`Eliminar a análise "${analyses[i]?.name}"?`)) return;
@@ -4390,76 +4386,6 @@ async function checkBackupOnLoad(){
 }
 
 // ══════════════════════════════════════════════
-// SEARCHABLE SELECT — Marca e Modelo
-// ══════════════════════════════════════════════
-const CAR_DATA = {
-  'Abarth':{ models:['124 Spider','500','595','695'], variants:{'595':['Competizione','Esseesse','Turismo'],'695':['Biposto','Rivale','Edizione Maserati']} },
-  'Alfa Romeo':{ models:['147','156','159','Brera','Giulia','Giulietta','GTV','MiTo','Spider','Stelvio','Tonale'], variants:{'Giulia':['2.0T','Quadrifoglio','Veloce','Sprint','Super'],'Stelvio':['2.0T','Quadrifoglio','Veloce','Sprint'],'Giulietta':['1.4 TB','1.8 TB Quadrifoglio','Sprint','Veloce']} },
-  'Aston Martin':{ models:['DB9','DB11','DBS','DBX','Rapide','Vantage','Vanquish','Virage'], variants:{'DB11':['V8','V12','AMR','Volante'],'DBS':['Superleggera','Volante'],'Vantage':['V8','F1 Edition','Roadster','AMR'],'DBX':['DBX','DBX707']} },
-  'Audi':{ models:['A1','A2','A3','A4','A5','A6','A7','A8','e-tron','e-tron GT','Q2','Q3','Q4 e-tron','Q5','Q6 e-tron','Q7','Q8','R8','RS3','RS4','RS5','RS6','RS7','RS Q3','RS Q8','S1','S3','S4','S5','S6','S7','S8','SQ5','SQ7','SQ8','TT','TTS','TT RS'],
-    variants:{'A3':['30 TFSI','35 TFSI','40 TFSI','35 TDI','S3','RS3','Sportback','Limousine','Cabriolet'],'A4':['35 TFSI','40 TFSI','45 TFSI','40 TDI','S4','RS4','Avant','Allroad'],'A5':['35 TFSI','40 TFSI','45 TFSI','S5','RS5','Sportback','Coupé','Cabriolet'],'A6':['35 TFSI','45 TFSI','40 TDI','50 TDI','S6','RS6','Allroad'],'Q5':['35 TFSI','40 TFSI','45 TFSI','40 TDI','50 TDI','SQ5','Sportback'],'Q7':['45 TFSI','50 TDI','55 TFSI','SQ7'],'Q8':['50 TFSI','55 TFSI','50 TDI','SQ8','RS Q8'],'R8':['V10','V10 Plus','V10 Performance','Spyder'],'RS6':['RS6 Avant','RS6 Performance'],'TT':['45 TFSI','TTS','TT RS Coupé','TT RS Roadster']} },
-  'Bentley':{ models:['Bentayga','Continental GT','Flying Spur','Mulsanne','Bacalar'], variants:{'Bentayga':['V8','W12','S','Speed','EWB','Azure'],'Continental GT':['V8','W12','Speed','Mulliner','GTC V8','GTC W12','GTC Speed'],'Flying Spur':['V6','V8','W12','S','Mulliner']} },
-  'BMW':{ models:['i3','i4','i5','i7','iX','iX1','iX2','iX3','M2','M3','M4','M5','M6','M8','X1','X2','X3','X4','X5','X6','X7','XM','Z3','Z4','1 Series','2 Series','3 Series','4 Series','5 Series','6 Series','7 Series','8 Series'],
-    variants:{'M2':['M2','M2 Competition','M2 CS'],'M3':['M3','M3 Competition','M3 Competition xDrive','M3 CS','M3 Touring','M3 Touring xDrive'],'M4':['M4','M4 Competition','M4 Competition xDrive','M4 CS','M4 CSL','M4 GTS','M4 Cabriolet'],'M5':['M5','M5 Competition','M5 CS','M5 Touring'],'M8':['M8 Coupé','M8 Cabriolet','M8 Gran Coupé','M8 Competition'],'X3':['xDrive20i','xDrive30i','xDrive20d','xDrive30d','M40i','M40d','M Competition'],'X5':['xDrive40i','xDrive50i','xDrive30d','xDrive40d','xDrive45e','M50i','M50d','M Competition'],'X6':['xDrive40i','xDrive50i','xDrive30d','xDrive40d','M50i','M Competition'],'X7':['xDrive40i','xDrive50i','xDrive30d','xDrive40d','M50i','M60i'],'iX':['iX xDrive40','iX xDrive50','iX M60'],'i4':['eDrive35','eDrive40','M50'],'3 Series':['318i','320i','330i','340i','318d','320d','330d','M340i','M340d','Touring','Limousine'],'5 Series':['520i','530i','540i','520d','530d','540d','M550i','Limousine','Touring'],'Z4':['sDrive20i','sDrive30i','M40i','sDrive20d']} },
-  'Chevrolet':{ models:['Camaro','Corvette','Silverado','Tahoe'], variants:{'Camaro':['SS','ZL1','Z/28','1LE'],'Corvette':['Stingray','Z06','ZR1','Grand Sport']} },
-  'Citroën':{ models:['Berlingo','C1','C2','C3','C3 Aircross','C4','C4 Picasso','C5','C5 Aircross','C5 X','C6','DS3','DS4','DS5'], variants:{} },
-  'Cupra':{ models:['Ateca','Born','Formentor','Leon'], variants:{'Formentor':['1.4 e-Hybrid','2.0 TSI 310','VZ5'],'Leon':['1.4 e-Hybrid','2.0 TSI','VZ']} },
-  'Dodge':{ models:['Challenger','Charger','Durango','Viper'], variants:{'Challenger':['R/T','Scat Pack','Hellcat','SRT Demon','SRT Super Stock'],'Charger':['R/T','Scat Pack','Hellcat','SRT Hellcat Redeye']} },
-  'Ferrari':{ models:['296 GTB','296 GTS','348','355','360','430','458','488','812','California','F40','F50','F8','Enzo','GTC4Lusso','LaFerrari','Portofino','Purosangue','Roma','SF90','Testarossa'],
-    variants:{'488':['488 GTB','488 Spider','488 Pista','488 Pista Spider'],'812':['812 Superfast','812 GTS','812 Competizione','812 Competizione A'],'SF90':['SF90 Stradale','SF90 Spider','SF90 XX'],'296':['296 GTB','296 GTS'],'F8':['F8 Tributo','F8 Spider'],'Portofino':['Portofino','Portofino M'],'458':['458 Italia','458 Spider','458 Speciale','458 Speciale A']} },
-  'Fiat':{ models:['124 Spider','500','500L','500X','Abarth 500','Bravo','Panda','Punto','Tipo'], variants:{'500':['500','500C','500e','Abarth 500','Abarth 595','Abarth 695']} },
-  'Ford':{ models:['C-Max','EcoSport','Edge','Explorer','F-150','Fiesta','Focus','Galaxy','Kuga','Maverick','Mondeo','Mustang','Mustang Mach-E','Puma','Ranger','S-Max'],
-    variants:{'Mustang':['2.3 EcoBoost','5.0 V8 GT','Shelby GT350','Shelby GT350R','Shelby GT500','Mach-E'],'Focus':['ST 2.3','RS','ST-Line','Titanium']} },
-  'Honda':{ models:['Accord','CR-V','Civic','HR-V','Jazz','NSX','Type R','e'], variants:{'Civic':['Type R','Sport','e:HEV','FK2','FK8','FL5'],'NSX':['NSX','NSX Type S']} },
-  'Hyundai':{ models:['i10','i20','i20 N','i30','i30 N','i40','IONIQ 5','IONIQ 6','Kona','Nexo','Santa Fe','Tucson'], variants:{'i30 N':['i30 N','i30 N Performance','i30 N Project C'],'IONIQ 5':['58kWh RWD','77.4kWh RWD','77.4kWh AWD','N'],'Kona':['Kona','Kona N','Electric']} },
-  'Jaguar':{ models:['E-Pace','F-Pace','F-Type','I-Pace','XE','XF','XJ'], variants:{'F-Type':['P300','P380','P450','P575 R SVR','Coupé','Convertible'],'F-Pace':['P250','P400','P400e','SVR'],'XF':['2.0d','2.0i','3.0d','S','Sportbrake']} },
-  'Jeep':{ models:['Cherokee','Compass','Gladiator','Grand Cherokee','Renegade','Wrangler'], variants:{'Wrangler':['Sport','Sahara','Rubicon','4xe'],'Grand Cherokee':['Laredo','Limited','Overland','Summit','SRT','Trackhawk']} },
-  'Kia':{ models:['Ceed','EV6','EV9','Niro','Picanto','ProCeed','Sorento','Soul','Sportage','Stinger','Stonic'], variants:{'Stinger':['2.0T','3.3 V6 GT'],'EV6':['Standard','Long Range','GT']} },
-  'Lamborghini':{ models:['Aventador','Gallardo','Huracan','Murcielago','Urus','Revuelto'],
-    variants:{'Huracan':['LP610-4','LP580-2','Performante','EVO','EVO RWD','STO','Tecnica','Sterrato'],'Aventador':['LP700-4','LP750-4 SV','SVJ','S Roadster','LP780-4 Ultimae'],'Urus':['Urus','Urus S','Urus Performante'],'Revuelto':['Revuelto']} },
-  'Land Rover':{ models:['Defender','Discovery','Discovery Sport','Freelander','Range Rover','Range Rover Evoque','Range Rover Sport','Range Rover Velar'],
-    variants:{'Range Rover':['P400','P530','D300','D350','P400e','SV','Autobiography','Vogue','LWB'],'Range Rover Sport':['P400','P530','P460e','D300','D350','SE','HSE','Autobiography','SVR','SV'],'Range Rover Evoque':['P200','P250','P300','D165','D200','R-Dynamic','S','SE','HSE'],'Defender':['90 P300','90 P400','110 P300','110 P400','110 P500','90 V8','110 V8','130','Works']} },
-  'Lexus':{ models:['CT','ES','GS','IS','LC','LS','LX','NX','RC','RX','UX'], variants:{'LC':['LC500','LC500h','LC500 Convertible'],'RC':['RC300h','RC350','RC F'],'IS':['IS300h','IS350 F Sport'],'NX':['NX300','NX350h','NX450h+']} },
-  'Maserati':{ models:['Ghibli','GranCabrio','GranTurismo','Grecale','Levante','MC20','Quattroporte'],
-    variants:{'GranTurismo':['GranTurismo','Trofeo','Folgore'],'MC20':['MC20','MC20 Cielo','MC20 Notte'],'Levante':['Levante','S','Trofeo','GTS'],'Quattroporte':['GTS','Trofeo','S Q4']} },
-  'Mazda':{ models:['2','3','6','CX-3','CX-30','CX-5','CX-60','CX-9','MX-30','MX-5','RX-8'], variants:{'MX-5':['1.5','2.0','RF','ND','NC','NB','NA'],'3':['2.0 Skyactiv','2.5 Turbo','MPS'],'CX-5':['2.0','2.5','2.2d Skyactiv']} },
-  'McLaren':{ models:['540C','570S','570GT','600LT','620R','650S','675LT','720S','750S','765LT','Artura','Senna','P1','Elva'],
-    variants:{'720S':['720S Coupé','720S Spider','720S Performance'],'765LT':['765LT Coupé','765LT Spider'],'750S':['750S Coupé','750S Spider'],'650S':['650S Coupé','650S Spider','650S Can-Am']} },
-  'Mercedes-Benz':{ models:['A-Class','B-Class','C-Class','CLA','CLS','E-Class','EQA','EQB','EQC','EQE','EQS','G-Class','GLA','GLB','GLC','GLE','GLS','S-Class','SL','AMG GT'],
-    variants:{'C-Class':['C180','C200','C300','C220d','C300d','C43 AMG','C63 AMG','C63 S AMG','C63 AMG E-Performance','Estate','Coupé','Cabriolet'],'E-Class':['E200','E300','E350','E220d','E300d','E350d','E53 AMG','E63 AMG','E63 S AMG','Estate','Coupé','All-Terrain'],'S-Class':['S400d','S450','S500','S580','S63 AMG','S65 AMG','S680','Maybach S580','Maybach S680'],'G-Class':['G350d','G400d','G500','G63 AMG','G65 AMG'],'GLC':['GLC200','GLC300','GLC220d','GLC300d','GLC43 AMG','GLC63 AMG','GLC63 S AMG','GLC63 AMG S','Coupé'],'GLE':['GLE300d','GLE350d','GLE400d','GLE450','GLE53 AMG','GLE63 AMG','GLE63 S AMG','Coupé'],'AMG GT':['AMG GT','AMG GT S','AMG GT C','AMG GT R','AMG GT R Pro','AMG GT 4-Door','AMG GT 63','AMG GT 63 S'],'SL':['SL43','SL55 AMG','SL63 AMG','R231','R232'],'CLA':['CLA200','CLA250','CLA35 AMG','CLA45 AMG','CLA45 S AMG','Shooting Brake']} },
-  'Mini':{ models:['Cabrio','Clubman','Convertible','Countryman','Coupé','Hardtop','JCW','Paceman','Roadster'],
-    variants:{'Countryman':['Cooper','Cooper S','Cooper D','Cooper SD','JCW ALL4'],'Hardtop':['One','Cooper','Cooper S','JCW'],'Clubman':['Cooper','Cooper S','JCW']} },
-  'Mitsubishi':{ models:['ASX','Eclipse Cross','L200','Outlander','Outlander PHEV','Pajero'], variants:{} },
-  'Nissan':{ models:['350Z','370Z','Ariya','GT-R','Juke','Leaf','Micra','Qashqai','X-Trail'],
-    variants:{'GT-R':['GT-R','GT-R Premium','GT-R Track Edition','GT-R Nismo'],'370Z':['370Z','370Z Roadster','370Z NISMO'],'350Z':['350Z Coupé','350Z Roadster','350Z Track']} },
-  'Opel':{ models:['Adam','Astra','Cascada','Corsa','Crossland','Insignia','Meriva','Mokka','Omega','Signum','Vectra','Zafira'], variants:{'Astra':['OPC','GSi','Sports Tourer','GTC']} },
-  'Peugeot':{ models:['106','206','207','208','306','307','308','408','508','2008','3008','4008','5008','e-208','e-2008','RCZ'],
-    variants:{'308':['GTi','SW','e-308'],'508':['SW','GT','PSE','e-508'],'RCZ':['RCZ','RCZ R']} },
-  'Porsche':{ models:['718 Boxster','718 Cayman','911','918','Cayenne','Macan','Panamera','Taycan'],
-    variants:{'911':['992','992.1','992.2','991','991.1','991.2','997','997.1','997.2','Carrera','Carrera S','Carrera 4','Carrera 4S','Targa 4','Targa 4S','GT3','GT3 RS','GT3 Touring','GT2 RS','Turbo','Turbo S','R','ST','Dakar','Sport Classic','GTS'],
-      '718 Cayman':['718 Cayman','718 Cayman S','718 Cayman GTS','718 Cayman GT4','718 Cayman GT4 RS','718 Spyder RS'],'718 Boxster':['718 Boxster','718 Boxster S','718 Boxster GTS','718 Spyder'],'Cayenne':['Cayenne','Cayenne S','Cayenne GTS','Cayenne Turbo','Cayenne Turbo GT','Cayenne E-Hybrid','Turbo S E-Hybrid','Coupé'],'Panamera':['Panamera','Panamera S','Panamera GTS','Panamera Turbo','Panamera Turbo S','Panamera E-Hybrid','Sport Turismo'],'Taycan':['Taycan','Taycan 4S','Taycan GTS','Taycan Turbo','Taycan Turbo S','Taycan Sport Turismo','Taycan Cross Turismo'],'Macan':['Macan','Macan S','Macan GTS','Macan Turbo','Macan EV']} },
-  'Renault':{ models:['Arkana','Captur','Clio','Espace','Kadjar','Koleos','Laguna','Megane','Scenic','Talisman','Twingo','Zoe'],
-    variants:{'Megane':['Megane RS','Megane RS Trophy','Megane RS Trophy-R'],'Clio':['RS','RS Trophy','E-Tech']} },
-  'Rolls-Royce':{ models:['Cullinan','Dawn','Ghost','Phantom','Silver Shadow','Spectre','Wraith'],
-    variants:{'Ghost':['Ghost','Ghost Extended','Black Badge'],'Cullinan':['Cullinan','Black Badge'],'Phantom':['Phantom','Phantom Extended','Black Badge']} },
-  'Seat':{ models:['Arona','Ateca','Ibiza','Leon','Tarraco'], variants:{'Leon':['1.4 TSI','1.5 TSI','2.0 TSI','Cupra','FR','ST']} },
-  'Skoda':{ models:['Enyaq','Fabia','Kamiq','Karoq','Kodiaq','Octavia','Scala','Superb'], variants:{'Octavia':['RS','RS 245','RS 230','iV','Combi'],'Kodiaq':['Scout','SportLine','RS']} },
-  'Subaru':{ models:['BRZ','Forester','Impreza','Levorg','Outback','WRX','WRX STI','XV'], variants:{'WRX STI':['WRX STI','WRX STI S209','WRX STI Type RA'],'BRZ':['BRZ','BRZ tS','BRZ STI Sport']} },
-  'Tesla':{ models:['Cybertruck','Model 3','Model S','Model X','Model Y','Roadster'],
-    variants:{'Model 3':['Standard Range','Long Range','Performance','Highland'],'Model S':['Long Range','Plaid','100D'],'Model X':['Long Range','Plaid','100D'],'Model Y':['Standard Range','Long Range','Performance']} },
-  'Toyota':{ models:['Aygo','C-HR','Camry','Corolla','GR86','GR Supra','GR Yaris','Hilux','Land Cruiser','Prius','RAV4','Yaris','bZ4X'],
-    variants:{'GR Supra':['2.0','3.0','A90','A91'],'GR Yaris':['1.6 Rally','Circuit','Morizo'],'GR86':['GR86 2.4'],'Land Cruiser':['3.0 D-4D','4.5 V8','300 Series']} },
-  'Volkswagen':{ models:['Arteon','Caddy','Golf','ID.3','ID.4','ID.5','ID.7','Multivan','Passat','Polo','Sharan','T-Cross','T-Roc','Tiguan','Touareg','Touran'],
-    variants:{'Golf':['GTI','GTI Performance','GTI Clubsport','GTD','GTE','Golf R','Golf R 20 Years','Golf 8 GTI','Golf 8 R','Golf 7 GTI','Golf 7 R'],'Touareg':['3.0 V6','4.0 V8','R','eHybrid','Black Edition'],'Arteon':['2.0 TSI','Shooting Brake','R']} },
-  'Volvo':{ models:['C30','C40','C70','S40','S60','S80','S90','V40','V60','V70','V90','XC40','XC60','XC70','XC90'],
-    variants:{'XC60':['B4','B5','B6','T8 Recharge','Polestar','R-Design','Inscription'],'XC90':['B5','B6','T8 Recharge','R-Design','Inscription','Excellence'],'S60':['B4','B5','T8 Recharge','Polestar Engineered','R-Design'],'V90':['B4','B5','Cross Country','B6 Cross Country']} },
-};
-function getModelsForMarca(marca){
-  const key = Object.keys(CAR_DATA).find(k=>k.toLowerCase()===marca.toLowerCase());
-  return key ? CAR_DATA[key].models || [] : [];
-}
-
-// ══════════════════════════════════════════════
 // APIFY INTEGRATION
 // ══════════════════════════════════════════════
 const APIFY_ACTORS = {
@@ -4718,19 +4644,6 @@ function saveServerUrl(url){
   const input = document.getElementById('server-url-input');
   if(input) input.value = url;
   showConfigStatus('server-url-status', '✓ URL do servidor guardado');
-}
-
-async function pushAnalysisToServer(analysis){
-  const serverUrl = getServerUrl();
-  if(!serverUrl || !analysis) return;
-  try{
-    await fetch(serverUrl+'/analyses', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(analysis),
-    });
-    console.log('Analysis pushed to server:', analysis.name);
-  } catch(e){ console.warn('Server push failed:', e.message); }
 }
 
 function initConfigStatus(){
